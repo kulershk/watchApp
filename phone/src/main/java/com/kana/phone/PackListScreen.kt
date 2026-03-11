@@ -121,7 +121,7 @@ fun PackListScreen(
                                     )
                                     if (pack.questionLang.isNotBlank() || pack.answerLang.isNotBlank()) {
                                         Text(
-                                            "${pack.questionLang.ifBlank { "?" }} \u2192 ${pack.answerLang.ifBlank { "?" }}",
+                                            "${langWithFlag(pack.questionLang).ifBlank { "?" }} \u2192 ${langWithFlag(pack.answerLang).ifBlank { "?" }}",
                                             fontSize = 12.sp,
                                             color = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f)
                                         )
@@ -233,7 +233,7 @@ fun PackListScreen(
                                 }
                                 if (pack.questionLang.isNotBlank() || pack.answerLang.isNotBlank()) {
                                     Text(
-                                        "${pack.questionLang.ifBlank { "?" }} \u2192 ${pack.answerLang.ifBlank { "?" }}",
+                                        "${langWithFlag(pack.questionLang).ifBlank { "?" }} \u2192 ${langWithFlag(pack.answerLang).ifBlank { "?" }}",
                                         fontSize = 12.sp,
                                         color = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f)
                                     )

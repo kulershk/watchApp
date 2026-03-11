@@ -140,7 +140,7 @@ fun PackEditorScreen(
                                 modifier = Modifier.weight(1f)
                             ) {
                                 OutlinedTextField(
-                                    value = questionLang.ifBlank { "Not set" },
+                                    value = langWithFlag(questionLang).ifBlank { "Not set" },
                                     onValueChange = {},
                                     readOnly = true,
                                     label = { Text("Questions") },
@@ -158,7 +158,7 @@ fun PackEditorScreen(
                                 ) {
                                     languages.forEach { lang ->
                                         DropdownMenuItem(
-                                            text = { Text(lang.ifBlank { "Not set" }) },
+                                            text = { Text(langWithFlag(lang).ifBlank { "Not set" }) },
                                             onClick = {
                                                 questionLang = lang
                                                 qExpanded = false
@@ -176,7 +176,7 @@ fun PackEditorScreen(
                                 modifier = Modifier.weight(1f)
                             ) {
                                 OutlinedTextField(
-                                    value = answerLang.ifBlank { "Not set" },
+                                    value = langWithFlag(answerLang).ifBlank { "Not set" },
                                     onValueChange = {},
                                     readOnly = true,
                                     label = { Text("Answers") },
@@ -194,7 +194,7 @@ fun PackEditorScreen(
                                 ) {
                                     languages.forEach { lang ->
                                         DropdownMenuItem(
-                                            text = { Text(lang.ifBlank { "Not set" }) },
+                                            text = { Text(langWithFlag(lang).ifBlank { "Not set" }) },
                                             onClick = {
                                                 answerLang = lang
                                                 aExpanded = false

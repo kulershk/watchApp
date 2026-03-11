@@ -1,5 +1,7 @@
 package com.kana.phone
 
+import android.widget.Toast
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -99,7 +101,7 @@ fun BrowsePacksScreen(
                     modifier = Modifier.weight(1f)
                 ) {
                     OutlinedTextField(
-                        value = filterQuestionLang.ifBlank { "Any" },
+                        value = langWithFlag(filterQuestionLang).ifBlank { "Any" },
                         onValueChange = {},
                         readOnly = true,
                         label = { Text("Questions", fontSize = 12.sp) },
@@ -118,7 +120,7 @@ fun BrowsePacksScreen(
                     ) {
                         languages.forEach { lang ->
                             DropdownMenuItem(
-                                text = { Text(lang.ifBlank { "Any" }) },
+                                text = { Text(langWithFlag(lang).ifBlank { "Any" }) },
                                 onClick = {
                                     filterQuestionLang = lang
                                     qExpanded = false
@@ -136,7 +138,7 @@ fun BrowsePacksScreen(
                     modifier = Modifier.weight(1f)
                 ) {
                     OutlinedTextField(
-                        value = filterAnswerLang.ifBlank { "Any" },
+                        value = langWithFlag(filterAnswerLang).ifBlank { "Any" },
                         onValueChange = {},
                         readOnly = true,
                         label = { Text("Answers", fontSize = 12.sp) },
@@ -155,7 +157,7 @@ fun BrowsePacksScreen(
                     ) {
                         languages.forEach { lang ->
                             DropdownMenuItem(
-                                text = { Text(lang.ifBlank { "Any" }) },
+                                text = { Text(langWithFlag(lang).ifBlank { "Any" }) },
                                 onClick = {
                                     filterAnswerLang = lang
                                     aExpanded = false
@@ -215,30 +217,53 @@ fun BrowsePacksScreen(
                             shape = RoundedCornerShape(12.dp)
                         ) {
                                 Column(modifier = Modifier.padding(16.dp)) {
-                                    Column {
-                                        Text(
-                                            pack.name.ifBlank { "Unnamed" },
-                                            fontSize = 16.sp,
-                                            fontWeight = FontWeight.Bold
-                                        )
-                                        Text(
-                                            "${pack.wordCount} words" + if (pack.downloadCount > 0) " \u2022 ${pack.downloadCount} downloads" else "",
-                                            fontSize = 13.sp,
-                                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                                        )
-                                        if (pack.author.isNotBlank()) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.Top
+                                    ) {
+                                        Column(modifier = Modifier.weight(1f)) {
                                             Text(
-                                                "by ${pack.author}",
-                                                fontSize = 12.sp,
-                                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                                                pack.name.ifBlank { "Unnamed" },
+                                                fontSize = 16.sp,
+                                                fontWeight = FontWeight.Bold
                                             )
+                                            Text(
+                                                "${pack.wordCount} words",
+                                                fontSize = 13.sp,
+                                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                                            )
+                                            if (pack.author.isNotBlank()) {
+                                                Text(
+                                                    "by ${pack.author}",
+                                                    fontSize = 12.sp,
+                                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                                                )
+                                            }
+                                            if (pack.questionLang.isNotBlank() || pack.answerLang.isNotBlank()) {
+                                                Text(
+                                                    "${langWithFlag(pack.questionLang).ifBlank { "?" }} \u2192 ${langWithFlag(pack.answerLang).ifBlank { "?" }}",
+                                                    fontSize = 12.sp,
+                                                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f)
+                                                )
+                                            }
                                         }
-                                        if (pack.questionLang.isNotBlank() || pack.answerLang.isNotBlank()) {
-                                            Text(
-                                                "${pack.questionLang.ifBlank { "?" }} \u2192 ${pack.answerLang.ifBlank { "?" }}",
-                                                fontSize = 12.sp,
-                                                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f)
-                                            )
+                                        Column(horizontalAlignment = Alignment.End) {
+                                            if (pack.downloadCount > 0) {
+                                                Text(
+                                                    "${pack.downloadCount} downloads",
+                                                    fontSize = 11.sp,
+                                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
+                                                )
+                                            }
+                                            val ago = timeAgo(pack.updatedAt)
+                                            if (ago.isNotBlank()) {
+                                                Text(
+                                                    ago,
+                                                    fontSize = 11.sp,
+                                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
+                                                )
+                                            }
                                         }
                                     }
 
@@ -263,31 +288,83 @@ fun BrowsePacksScreen(
 
                                     Spacer(modifier = Modifier.height(8.dp))
 
-                                    if (isDownloaded) {
-                                        OutlinedButton(onClick = {}, enabled = false, shape = RoundedCornerShape(8.dp)) {
-                                            Text("Downloaded")
-                                        }
-                                    } else if (pack.token in downloadingTokens) {
-                                        OutlinedButton(onClick = {}, enabled = false, shape = RoundedCornerShape(8.dp)) {
-                                            Text("Downloading...")
-                                        }
-                                    } else {
-                                        Button(
-                                            onClick = {
-                                                downloadingTokens = downloadingTokens + pack.token
-                                                PackUpdater.downloadPack(context, pack.token) { success, message ->
-                                                    downloadingTokens = downloadingTokens - pack.token
-                                                    if (success) {
-                                                        localTokens = localTokens + pack.token
+                                    val isLoggedIn = AppSettings.isLoggedIn(context)
+                                    var packAvg by remember { mutableStateOf(pack.avgRating) }
+                                    var packRatingCount by remember { mutableStateOf(pack.ratingCount) }
+                                    var userRating by remember { mutableStateOf(0) }
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.SpaceBetween
+                                    ) {
+                                        // Download button
+                                        if (isDownloaded) {
+                                            OutlinedButton(onClick = {}, enabled = false, shape = RoundedCornerShape(8.dp)) {
+                                                Text("Downloaded")
+                                            }
+                                        } else if (pack.token in downloadingTokens) {
+                                            OutlinedButton(onClick = {}, enabled = false, shape = RoundedCornerShape(8.dp)) {
+                                                Text("Downloading...")
+                                            }
+                                        } else {
+                                            Button(
+                                                onClick = {
+                                                    downloadingTokens = downloadingTokens + pack.token
+                                                    PackUpdater.downloadPack(context, pack.token) { success, message ->
+                                                        downloadingTokens = downloadingTokens - pack.token
+                                                        if (success) {
+                                                            localTokens = localTokens + pack.token
+                                                        }
+                                                        android.widget.Toast.makeText(context, message, android.widget.Toast.LENGTH_SHORT).show()
                                                     }
-                                                    android.widget.Toast.makeText(context, message, android.widget.Toast.LENGTH_SHORT).show()
-                                                }
-                                            },
-                                            colors = ButtonDefaults.buttonColors(
-                                                containerColor = MaterialTheme.colorScheme.primary
-                                            ),
-                                            shape = RoundedCornerShape(8.dp)
-                                        ) { Text("Download") }
+                                                },
+                                                colors = ButtonDefaults.buttonColors(
+                                                    containerColor = MaterialTheme.colorScheme.primary
+                                                ),
+                                                shape = RoundedCornerShape(8.dp)
+                                            ) { Text("Download") }
+                                        }
+
+                                        // Stars
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(1.dp)
+                                        ) {
+                                            if (packRatingCount > 0) {
+                                                Text(
+                                                    "%.1f".format(packAvg),
+                                                    fontSize = 12.sp,
+                                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                                                    modifier = Modifier.padding(end = 4.dp)
+                                                )
+                                            }
+                                            (1..5).forEach { star ->
+                                                val filled = if (userRating > 0) star <= userRating else star <= packAvg + 0.5f
+                                                Text(
+                                                    if (filled) "\u2605" else "\u2606",
+                                                    fontSize = 18.sp,
+                                                    color = if (filled)
+                                                        MaterialTheme.colorScheme.primary
+                                                    else
+                                                        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
+                                                    modifier = Modifier.clickable {
+                                                        if (!isLoggedIn) {
+                                                            Toast.makeText(context, "Login to rate packs", Toast.LENGTH_SHORT).show()
+                                                            return@clickable
+                                                        }
+                                                        ApiClient.ratePack(pack.token, star, context) { success, newAvg, newCount ->
+                                                            if (success) {
+                                                                userRating = star
+                                                                packAvg = newAvg
+                                                                packRatingCount = newCount
+                                                            } else {
+                                                                Toast.makeText(context, "Rating failed", Toast.LENGTH_SHORT).show()
+                                                            }
+                                                        }
+                                                    }
+                                                )
+                                            }
+                                        }
                                     }
 
                                 }

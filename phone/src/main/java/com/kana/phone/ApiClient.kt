@@ -21,7 +21,9 @@ data class RemotePack(
     val questionLang: String = "",
     val answerLang: String = "",
     val downloadCount: Int = 0,
-    val isOwner: Boolean = true
+    val isOwner: Boolean = true,
+    val avgRating: Float = 0f,
+    val ratingCount: Int = 0
 )
 
 data class Collaborator(
@@ -276,7 +278,9 @@ object ApiClient {
                                 author = obj.optString("author", ""),
                                 questionLang = obj.optString("question_lang", ""),
                                 answerLang = obj.optString("answer_lang", ""),
-                                downloadCount = obj.optInt("download_count", 0)
+                                downloadCount = obj.optInt("download_count", 0),
+                                avgRating = obj.optDouble("avg_rating", 0.0).toFloat(),
+                                ratingCount = obj.optInt("rating_count", 0)
                             )
                         )
                     }
@@ -492,6 +496,38 @@ object ApiClient {
                 }
             } catch (e: Exception) {
                 withContext(Dispatchers.Main) { onResult(false, "Failed: ${e.message}") }
+            }
+        }
+    }
+
+    // ============ RATINGS ============
+
+    fun ratePack(token: String, rating: Int, context: Context, onResult: (Boolean, Float, Int) -> Unit) {
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val connection = URL("$BASE/packs/$token/rate").openConnection() as HttpURLConnection
+                connection.requestMethod = "POST"
+                connection.setRequestProperty("Content-Type", "application/json")
+                connection.doOutput = true
+                connection.connectTimeout = 10000
+                connection.readTimeout = 10000
+                addAuth(connection, context)
+
+                val body = JSONObject()
+                body.put("rating", rating)
+                OutputStreamWriter(connection.outputStream).use { it.write(body.toString()) }
+
+                if (connection.responseCode == HttpURLConnection.HTTP_OK) {
+                    val json = connection.inputStream.bufferedReader().readText()
+                    val obj = JSONObject(json)
+                    val avgRating = obj.optDouble("avg_rating", 0.0).toFloat()
+                    val ratingCount = obj.optInt("rating_count", 0)
+                    withContext(Dispatchers.Main) { onResult(true, avgRating, ratingCount) }
+                } else {
+                    withContext(Dispatchers.Main) { onResult(false, 0f, 0) }
+                }
+            } catch (_: Exception) {
+                withContext(Dispatchers.Main) { onResult(false, 0f, 0) }
             }
         }
     }

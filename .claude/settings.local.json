@@ -10,7 +10,9 @@
       "Bash(./gradlew :phone:compileDebugKotlin 2>&1 | tail -20)",
       "Bash(ls *.bat *.sh 2>/dev/null; ls gradlew* 2>/dev/null)",
       "Bash(grep -n \"PackUpdater\\\\|downloadPack\\\\|fetchPack\" \"C:\\\\Users\\\\kuler\\\\Desktop\\\\Stuff\\\\watch\\\\phone\\\\src\\\\main\\\\java\\\\com\\\\kana\\\\phone\"/*.kt)",
-      "Bash(python3 -c \"\nd=0\nwith open\\('C:/Users/kuler/Desktop/Stuff/watch/phone/src/main/java/com/kana/phone/EditorScreens.kt'\\) as f:\n    for i,line in enumerate\\(f,1\\):\n        for c in line:\n            if c=='{': d+=1\n            elif c=='}': d-=1\n            if d<0:\n                print\\(f'Depth goes negative at line {i}'\\)\n                exit\\(\\)\nprint\\(f'Final depth: {d}'\\)\n\")"
+      "Bash(python3 -c \"\nd=0\nwith open\\('C:/Users/kuler/Desktop/Stuff/watch/phone/src/main/java/com/kana/phone/EditorScreens.kt'\\) as f:\n    for i,line in enumerate\\(f,1\\):\n        for c in line:\n            if c=='{': d+=1\n            elif c=='}': d-=1\n            if d<0:\n                print\\(f'Depth goes negative at line {i}'\\)\n                exit\\(\\)\nprint\\(f'Final depth: {d}'\\)\n\")",
+      "Bash(ls \"C:/Users/kuler/Desktop/Stuff/watch/phone/\"*.jks \"C:/Users/kuler/Desktop/Stuff/watch/\"*.jks 2>/dev/null; cat \"C:/Users/kuler/Desktop/Stuff/watch/phone/build.gradle.kts\" 2>/dev/null | head -80; cat \"C:/Users/kuler/Desktop/Stuff/watch/phone/build.gradle\" 2>/dev/null | head -80)",
+      "Bash(ls -la /c/Users/kuler/Desktop/Stuff/watch/phone/src/main/java/com/kana/phone/*.kt)"
     ]
   }
 }
