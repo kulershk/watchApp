@@ -62,7 +62,8 @@ fun PackListScreen(
         floatingActionButton = {
             FloatingActionButton(
                 onClick = onCreatePack,
-                containerColor = MaterialTheme.colorScheme.primary
+                containerColor = MaterialTheme.colorScheme.primary,
+                shape = RoundedCornerShape(8.dp)
             ) {
                 Text("+", fontSize = 24.sp, color = MaterialTheme.colorScheme.onPrimary)
             }
@@ -85,7 +86,7 @@ fun PackListScreen(
                     Text("No packs yet", fontSize = 18.sp,
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
                     Spacer(modifier = Modifier.height(16.dp))
-                    Button(onClick = onCreatePack) {
+                    Button(onClick = onCreatePack, shape = RoundedCornerShape(8.dp)) {
                         Text("Create First Pack")
                     }
                 }
@@ -147,15 +148,16 @@ fun PackListScreen(
 
                             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                 FilledTonalButton(
-                                    onClick = { onEditPack(pack.token) }
+                                    onClick = { onEditPack(pack.token) },
+                                    shape = RoundedCornerShape(8.dp)
                                 ) { Text("Edit") }
 
                                 if (pack.token in localTokens) {
-                                    OutlinedButton(onClick = {}, enabled = false) {
+                                    OutlinedButton(onClick = {}, enabled = false, shape = RoundedCornerShape(8.dp)) {
                                         Text("Downloaded")
                                     }
                                 } else if (pack.token in downloadingTokens) {
-                                    OutlinedButton(onClick = {}, enabled = false) {
+                                    OutlinedButton(onClick = {}, enabled = false, shape = RoundedCornerShape(8.dp)) {
                                         Text("Downloading...")
                                     }
                                 } else {
@@ -172,7 +174,8 @@ fun PackListScreen(
                                         },
                                         colors = ButtonDefaults.buttonColors(
                                             containerColor = MaterialTheme.colorScheme.secondary
-                                        )
+                                        ),
+                                        shape = RoundedCornerShape(8.dp)
                                     ) { Text("Download") }
                                 }
                             }
@@ -329,7 +332,7 @@ fun PackEditorScreen(
                         color = MaterialTheme.colorScheme.primary
                     )
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        FilledTonalButton(onClick = { showImport = !showImport }) {
+                        FilledTonalButton(onClick = { showImport = !showImport }, shape = RoundedCornerShape(8.dp)) {
                             Text(if (showImport) "Hide Import" else "Import")
                         }
                     }
@@ -363,6 +366,7 @@ fun PackEditorScreen(
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                             Button(
+                                shape = RoundedCornerShape(8.dp),
                                 onClick = {
                                     val newWords = importText.lines()
                                         .map { it.trim() }
@@ -532,7 +536,8 @@ fun PackEditorScreen(
                         updated.add(EditWord())
                         words = updated
                     },
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(8.dp)
                 ) {
                     Text("+ Add Word")
                 }
@@ -585,7 +590,8 @@ fun PackEditorScreen(
                         modifier = Modifier.weight(1f),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = MaterialTheme.colorScheme.primary
-                        )
+                        ),
+                        shape = RoundedCornerShape(8.dp)
                     ) {
                         Text(
                             when {
@@ -609,7 +615,8 @@ fun PackEditorScreen(
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = MaterialTheme.colorScheme.error
                             ),
-                            modifier = Modifier.weight(1f)
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(8.dp)
                         ) {
                             Text("Delete", fontSize = 16.sp, modifier = Modifier.padding(8.dp))
                         }
@@ -679,7 +686,8 @@ fun BrowsePacksScreen(
                 trailingIcon = {
                     FilledTonalButton(
                         onClick = { loadPacks() },
-                        contentPadding = PaddingValues(horizontal = 12.dp)
+                        contentPadding = PaddingValues(horizontal = 12.dp),
+                        shape = RoundedCornerShape(8.dp)
                     ) { Text("Search") }
                 },
                 colors = OutlinedTextFieldDefaults.colors(
@@ -783,11 +791,11 @@ fun BrowsePacksScreen(
                                 Spacer(modifier = Modifier.height(8.dp))
 
                                 if (pack.token in localTokens) {
-                                    OutlinedButton(onClick = {}, enabled = false) {
+                                    OutlinedButton(onClick = {}, enabled = false, shape = RoundedCornerShape(8.dp)) {
                                         Text("Downloaded")
                                     }
                                 } else if (pack.token in downloadingTokens) {
-                                    OutlinedButton(onClick = {}, enabled = false) {
+                                    OutlinedButton(onClick = {}, enabled = false, shape = RoundedCornerShape(8.dp)) {
                                         Text("Downloading...")
                                     }
                                 } else {
@@ -804,7 +812,8 @@ fun BrowsePacksScreen(
                                         },
                                         colors = ButtonDefaults.buttonColors(
                                             containerColor = MaterialTheme.colorScheme.primary
-                                        )
+                                        ),
+                                        shape = RoundedCornerShape(8.dp)
                                     ) { Text("Download") }
                                 }
                             }
@@ -853,6 +862,7 @@ fun WordAudioControls(
             verticalAlignment = Alignment.CenterVertically
         ) {
             FilledTonalButton(
+                shape = RoundedCornerShape(8.dp),
                 onClick = {
                     if (playing) return@FilledTonalButton
                     playing = true
@@ -912,6 +922,7 @@ fun WordAudioControls(
         ) {
             if (recording) {
                 Button(
+                    shape = RoundedCornerShape(8.dp),
                     onClick = {
                         val file = recorder.stopRecording()
                         recording = false
@@ -963,7 +974,8 @@ fun WordAudioControls(
                         } else {
                             permissionLauncher.launch(android.Manifest.permission.RECORD_AUDIO)
                         }
-                    }
+                    },
+                    shape = RoundedCornerShape(8.dp)
                 ) {
                     Text("\u25cf Record Audio")
                 }

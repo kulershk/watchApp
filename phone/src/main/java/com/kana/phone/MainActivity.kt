@@ -210,6 +210,7 @@ fun HomeScreen(
             Button(
                 onClick = onStartQuiz,
                 modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = MaterialTheme.colorScheme.secondary
                 )
@@ -220,6 +221,7 @@ fun HomeScreen(
             Button(
                 onClick = onPacks,
                 modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = MaterialTheme.colorScheme.surface
                 )
@@ -235,6 +237,7 @@ fun HomeScreen(
             Button(
                 onClick = onBrowse,
                 modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = MaterialTheme.colorScheme.surface
                 )
@@ -257,6 +260,7 @@ fun HomeScreen(
                     }
                 },
                 modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = if (isActive)
                         MaterialTheme.colorScheme.error
@@ -278,7 +282,8 @@ fun HomeScreen(
 
             OutlinedButton(
                 onClick = onSettings,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(8.dp)
             ) {
                 Text("Settings", fontSize = 16.sp)
             }
@@ -340,12 +345,13 @@ fun QuizScreen(
             if (!revealed) {
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     if (reading.isNotBlank() && !hintShown) {
-                        OutlinedButton(onClick = { hintShown = true }) {
+                        OutlinedButton(onClick = { hintShown = true }, shape = RoundedCornerShape(8.dp)) {
                             Text("Hint")
                         }
                     }
                     Button(
                         onClick = { revealed = true },
+                        shape = RoundedCornerShape(8.dp),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = MaterialTheme.colorScheme.primary
                         )
@@ -366,6 +372,7 @@ fun QuizScreen(
 
                 Button(
                     onClick = onNext,
+                    shape = RoundedCornerShape(8.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = MaterialTheme.colorScheme.secondary
                     )
@@ -436,6 +443,7 @@ fun SettingsScreen(onBack: () -> Unit, onLogout: () -> Unit, context: android.co
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     FilledTonalButton(
+                        shape = RoundedCornerShape(8.dp),
                         onClick = {
                             if (selectedIndex > 0) {
                                 selectedIndex--
@@ -465,6 +473,7 @@ fun SettingsScreen(onBack: () -> Unit, onLogout: () -> Unit, context: android.co
                     }
 
                     FilledTonalButton(
+                        shape = RoundedCornerShape(8.dp),
                         onClick = {
                             if (selectedIndex < presets.size - 1) {
                                 selectedIndex++
@@ -526,6 +535,7 @@ fun SettingsScreen(onBack: () -> Unit, onLogout: () -> Unit, context: android.co
 
                             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                 FilledTonalButton(
+                                    shape = RoundedCornerShape(8.dp),
                                     onClick = {
                                         PackUpdater.updatePack(context, pack.token) { _, message ->
                                             Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
@@ -541,6 +551,7 @@ fun SettingsScreen(onBack: () -> Unit, onLogout: () -> Unit, context: android.co
                                         packs = WordStorage.loadAllPacks(context)
                                         enabledPacks = AppSettings.getEnabledPacks(context)
                                     },
+                                    shape = RoundedCornerShape(8.dp),
                                     colors = ButtonDefaults.buttonColors(
                                         containerColor = MaterialTheme.colorScheme.error
                                     )
@@ -596,7 +607,7 @@ fun SettingsScreen(onBack: () -> Unit, onLogout: () -> Unit, context: android.co
                                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
                             )
                             Spacer(modifier = Modifier.height(8.dp))
-                            OutlinedButton(onClick = { pairCode = null }) {
+                            OutlinedButton(onClick = { pairCode = null }, shape = RoundedCornerShape(8.dp)) {
                                 Text("Done")
                             }
                         } else {
@@ -619,6 +630,7 @@ fun SettingsScreen(onBack: () -> Unit, onLogout: () -> Unit, context: android.co
                                     }
                                 },
                                 enabled = !generating,
+                                shape = RoundedCornerShape(8.dp),
                                 colors = ButtonDefaults.buttonColors(
                                     containerColor = MaterialTheme.colorScheme.primary
                                 )
@@ -645,6 +657,7 @@ fun SettingsScreen(onBack: () -> Unit, onLogout: () -> Unit, context: android.co
                 Button(
                     onClick = onLogout,
                     modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(8.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = MaterialTheme.colorScheme.error
                     )

@@ -1,9 +1,12 @@
 package com.kana.phone.theme
 
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Shapes
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
 
 private val KanaColors = darkColorScheme(
     primary = Color(0xFF1DB954),            // Spotify green
@@ -21,10 +24,19 @@ private val KanaColors = darkColorScheme(
     outline = Color(0xFF535353),
 )
 
+private val KanaShapes = Shapes(
+    extraSmall = RoundedCornerShape(8.dp),
+    small = RoundedCornerShape(8.dp),
+    medium = RoundedCornerShape(8.dp),
+    large = RoundedCornerShape(8.dp),
+    extraLarge = RoundedCornerShape(8.dp),
+)
+
 @Composable
 fun KanaPhoneTheme(content: @Composable () -> Unit) {
     MaterialTheme(
         colorScheme = KanaColors,
+        shapes = KanaShapes,
         content = content
     )
 }

@@ -14,6 +14,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.credentials.CredentialManager
@@ -106,6 +107,7 @@ fun LoginScreen(
                 },
                 enabled = !loading,
                 modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
             ) {
                 Text(if (loading) "Logging in..." else "Login", fontSize = 16.sp, modifier = Modifier.padding(4.dp))
@@ -144,7 +146,8 @@ fun LoginScreen(
                         }
                     },
                     enabled = !loading,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(8.dp)
                 ) {
                     Text("Sign in with Google", fontSize = 16.sp, modifier = Modifier.padding(4.dp))
                 }
@@ -259,6 +262,7 @@ fun RegisterScreen(
                 },
                 enabled = !loading,
                 modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
             ) {
                 Text(if (loading) "Creating..." else "Register", fontSize = 16.sp, modifier = Modifier.padding(4.dp))
