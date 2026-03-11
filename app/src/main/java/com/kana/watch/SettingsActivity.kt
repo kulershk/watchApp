@@ -88,6 +88,10 @@ class SettingsActivity : ComponentActivity() {
 
                     val name = jsonObj.optString("name", "Pack $token")
                     val updated = jsonObj.optString("updated_at", "")
+                    val qLang = jsonObj.optString("question_lang", "")
+                    val aLang = jsonObj.optString("answer_lang", "")
+                    val packAuthor = jsonObj.optString("author", "")
+                    val dlCount = jsonObj.optInt("download_count", 0)
                     val wordsArray = jsonObj.getJSONArray("words")
                     val words = mutableListOf<Word>()
 
@@ -107,7 +111,11 @@ class SettingsActivity : ComponentActivity() {
                         token = token,
                         name = name,
                         updated = updated,
-                        words = words
+                        words = words,
+                        questionLang = qLang,
+                        answerLang = aLang,
+                        author = packAuthor,
+                        downloadCount = dlCount
                     )
                     WordStorage.savePack(this@SettingsActivity, pack)
 

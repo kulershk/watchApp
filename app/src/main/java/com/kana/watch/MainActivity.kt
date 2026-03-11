@@ -85,6 +85,10 @@ class MainActivity : ComponentActivity() {
 
                         val name = packObj.optString("name", "Pack $token")
                         val updatedAt = packObj.optString("updated_at", "")
+                        val qLang = packObj.optString("question_lang", "")
+                        val aLang = packObj.optString("answer_lang", "")
+                        val author = packObj.optString("author", "")
+                        val dlCount = packObj.optInt("download_count", 0)
                         val wordsArray = packObj.getJSONArray("words")
                         val words = mutableListOf<Word>()
 
@@ -105,7 +109,7 @@ class MainActivity : ComponentActivity() {
                         val localPack = localPacks.find { it.token == token }
 
                         if (localPack == null || localPack.updated != updatedAt) {
-                            val pack = WordPack(token = token, name = name, updated = updatedAt, words = words)
+                            val pack = WordPack(token = token, name = name, updated = updatedAt, words = words, questionLang = qLang, answerLang = aLang, author = author, downloadCount = dlCount)
                             WordStorage.savePack(this@MainActivity, pack)
                             AudioCache.downloadPackAudio(this@MainActivity, words)
 

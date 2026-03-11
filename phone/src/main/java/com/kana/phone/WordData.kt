@@ -15,7 +15,11 @@ data class WordPack(
     val token: String,
     val name: String,
     val updated: String,
-    val words: List<Word>
+    val words: List<Word>,
+    val questionLang: String = "",
+    val answerLang: String = "",
+    val author: String = "",
+    val downloadCount: Int = 0
 )
 
 object WordStorage {
@@ -63,7 +67,11 @@ object WordStorage {
                     token = packObj.getString("token"),
                     name = packObj.optString("name", "Pack ${packObj.getString("token")}"),
                     updated = packObj.optString("updated", ""),
-                    words = words
+                    words = words,
+                    questionLang = packObj.optString("question_lang", ""),
+                    answerLang = packObj.optString("answer_lang", ""),
+                    author = packObj.optString("author", ""),
+                    downloadCount = packObj.optInt("download_count", 0)
                 )
             )
         }
@@ -112,6 +120,10 @@ object WordStorage {
                 wordsArray.put(wordObj)
             }
             packObj.put("words", wordsArray)
+            packObj.put("question_lang", p.questionLang)
+            packObj.put("answer_lang", p.answerLang)
+            packObj.put("author", p.author)
+            packObj.put("download_count", p.downloadCount)
             jsonArray.put(packObj)
         }
 

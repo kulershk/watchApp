@@ -17,7 +17,17 @@ data class RemotePack(
     val updatedAt: String,
     val isPublic: Boolean = false,
     val tags: String = "",
-    val author: String = ""
+    val author: String = "",
+    val questionLang: String = "",
+    val answerLang: String = "",
+    val downloadCount: Int = 0,
+    val isOwner: Boolean = true
+)
+
+data class Collaborator(
+    val id: Int,
+    val displayName: String,
+    val friendCode: String
 )
 
 data class EditWord(
@@ -33,7 +43,9 @@ data class EditPack(
     val name: String,
     val words: List<EditWord>,
     val isPublic: Boolean = false,
-    val tags: String = ""
+    val tags: String = "",
+    val questionLang: String = "",
+    val answerLang: String = ""
 )
 
 object ApiClient {
@@ -75,6 +87,7 @@ object ApiClient {
                     AppSettings.setAuthToken(context, obj.getString("token"))
                     val user = obj.getJSONObject("user")
                     AppSettings.setUserEmail(context, user.getString("email"))
+                    AppSettings.setFriendCode(context, user.optString("friendCode", ""))
                     withContext(Dispatchers.Main) { onResult(true, "Registered") }
                 } else {
                     withContext(Dispatchers.Main) { onResult(false, obj.optString("error", "Registration failed")) }
@@ -111,6 +124,7 @@ object ApiClient {
                     AppSettings.setAuthToken(context, obj.getString("token"))
                     val user = obj.getJSONObject("user")
                     AppSettings.setUserEmail(context, user.getString("email"))
+                    AppSettings.setFriendCode(context, user.optString("friendCode", ""))
                     withContext(Dispatchers.Main) { onResult(true, "Logged in") }
                 } else {
                     withContext(Dispatchers.Main) { onResult(false, obj.optString("error", "Login failed")) }
@@ -146,6 +160,7 @@ object ApiClient {
                     AppSettings.setAuthToken(context, obj.getString("token"))
                     val user = obj.getJSONObject("user")
                     AppSettings.setUserEmail(context, user.getString("email"))
+                    AppSettings.setFriendCode(context, user.optString("friendCode", ""))
                     withContext(Dispatchers.Main) { onResult(true, "Signed in with Google") }
                 } else {
                     withContext(Dispatchers.Main) { onResult(false, obj.optString("error", "Google sign-in failed")) }
@@ -210,7 +225,11 @@ object ApiClient {
                                 wordCount = obj.optInt("word_count", 0),
                                 updatedAt = obj.optString("updated_at", ""),
                                 isPublic = obj.optBoolean("is_public", false),
-                                tags = obj.optString("tags", "")
+                                tags = obj.optString("tags", ""),
+                                questionLang = obj.optString("question_lang", ""),
+                                answerLang = obj.optString("answer_lang", ""),
+                                downloadCount = obj.optInt("download_count", 0),
+                                isOwner = obj.optBoolean("is_owner", true)
                             )
                         )
                     }
@@ -225,12 +244,14 @@ object ApiClient {
         }
     }
 
-    fun fetchPublicPacks(search: String = "", tag: String = "", onResult: (Boolean, List<RemotePack>) -> Unit) {
+    fun fetchPublicPacks(search: String = "", tag: String = "", questionLang: String = "", answerLang: String = "", onResult: (Boolean, List<RemotePack>) -> Unit) {
         CoroutineScope(Dispatchers.IO).launch {
             try {
                 val params = mutableListOf<String>()
                 if (search.isNotBlank()) params.add("search=${java.net.URLEncoder.encode(search, "UTF-8")}")
                 if (tag.isNotBlank()) params.add("tag=${java.net.URLEncoder.encode(tag, "UTF-8")}")
+                if (questionLang.isNotBlank()) params.add("question_lang=${java.net.URLEncoder.encode(questionLang, "UTF-8")}")
+                if (answerLang.isNotBlank()) params.add("answer_lang=${java.net.URLEncoder.encode(answerLang, "UTF-8")}")
                 val queryString = if (params.isNotEmpty()) "?${params.joinToString("&")}" else ""
 
                 val connection = URL("$BASE/packs/browse$queryString").openConnection() as HttpURLConnection
@@ -252,7 +273,10 @@ object ApiClient {
                                 wordCount = obj.optInt("word_count", 0),
                                 updatedAt = obj.optString("updated_at", ""),
                                 tags = obj.optString("tags", ""),
-                                author = obj.optString("author", "")
+                                author = obj.optString("author", ""),
+                                questionLang = obj.optString("question_lang", ""),
+                                answerLang = obj.optString("answer_lang", ""),
+                                downloadCount = obj.optInt("download_count", 0)
                             )
                         )
                     }
@@ -298,9 +322,11 @@ object ApiClient {
 
                     val isPublic = obj.optBoolean("is_public", false)
                     val packTags = obj.optString("tags", "")
+                    val questionLang = obj.optString("question_lang", "")
+                    val answerLang = obj.optString("answer_lang", "")
 
                     withContext(Dispatchers.Main) {
-                        onResult(true, EditPack(token, name, words, isPublic, packTags))
+                        onResult(true, EditPack(token, name, words, isPublic, packTags, questionLang, answerLang))
                     }
                 } else {
                     withContext(Dispatchers.Main) { onResult(false, null) }
@@ -311,7 +337,7 @@ object ApiClient {
         }
     }
 
-    fun createPack(name: String, words: List<EditWord>, context: Context, isPublic: Boolean = false, tags: String = "", onResult: (Boolean, String) -> Unit) {
+    fun createPack(name: String, words: List<EditWord>, context: Context, isPublic: Boolean = false, tags: String = "", questionLang: String = "", answerLang: String = "", onResult: (Boolean, String) -> Unit) {
         CoroutineScope(Dispatchers.IO).launch {
             try {
                 val connection = URL("$BASE/packs").openConnection() as HttpURLConnection
@@ -326,6 +352,8 @@ object ApiClient {
                 body.put("name", name)
                 body.put("is_public", isPublic)
                 body.put("tags", tags)
+                body.put("question_lang", questionLang)
+                body.put("answer_lang", answerLang)
                 val wordsArr = JSONArray()
                 for (w in words) {
                     val wo = JSONObject()
@@ -355,7 +383,7 @@ object ApiClient {
         }
     }
 
-    fun savePack(token: String, name: String, words: List<EditWord>, context: Context, isPublic: Boolean = false, tags: String = "", onResult: (Boolean, String) -> Unit) {
+    fun savePack(token: String, name: String, words: List<EditWord>, context: Context, isPublic: Boolean = false, tags: String = "", questionLang: String = "", answerLang: String = "", onResult: (Boolean, String) -> Unit) {
         CoroutineScope(Dispatchers.IO).launch {
             try {
                 val connection = URL("$BASE/packs/$token").openConnection() as HttpURLConnection
@@ -370,6 +398,8 @@ object ApiClient {
                 body.put("name", name)
                 body.put("is_public", isPublic)
                 body.put("tags", tags)
+                body.put("question_lang", questionLang)
+                body.put("answer_lang", answerLang)
                 val wordsArr = JSONArray()
                 for (w in words) {
                     val wo = JSONObject()
@@ -462,6 +492,85 @@ object ApiClient {
                 }
             } catch (e: Exception) {
                 withContext(Dispatchers.Main) { onResult(false, "Failed: ${e.message}") }
+            }
+        }
+    }
+
+    // ============ COLLABORATORS ============
+
+    fun fetchCollaborators(token: String, context: Context, onResult: (Boolean, List<Collaborator>) -> Unit) {
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val connection = URL("$BASE/packs/$token/collaborators").openConnection() as HttpURLConnection
+                connection.requestMethod = "GET"
+                connection.connectTimeout = 10000
+                connection.readTimeout = 10000
+                addAuth(connection, context)
+
+                if (connection.responseCode == HttpURLConnection.HTTP_OK) {
+                    val json = connection.inputStream.bufferedReader().readText()
+                    val arr = JSONArray(json)
+                    val collabs = mutableListOf<Collaborator>()
+                    for (i in 0 until arr.length()) {
+                        val obj = arr.getJSONObject(i)
+                        collabs.add(Collaborator(
+                            id = obj.getInt("id"),
+                            displayName = obj.optString("displayName", ""),
+                            friendCode = obj.optString("friendCode", "")
+                        ))
+                    }
+                    withContext(Dispatchers.Main) { onResult(true, collabs) }
+                } else {
+                    withContext(Dispatchers.Main) { onResult(false, emptyList()) }
+                }
+            } catch (_: Exception) {
+                withContext(Dispatchers.Main) { onResult(false, emptyList()) }
+            }
+        }
+    }
+
+    fun addCollaborator(token: String, friendCode: String, context: Context, onResult: (Boolean, String) -> Unit) {
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val connection = URL("$BASE/packs/$token/collaborators").openConnection() as HttpURLConnection
+                connection.requestMethod = "POST"
+                connection.setRequestProperty("Content-Type", "application/json")
+                connection.doOutput = true
+                connection.connectTimeout = 10000
+                connection.readTimeout = 10000
+                addAuth(connection, context)
+
+                val body = JSONObject()
+                body.put("friend_code", friendCode)
+                OutputStreamWriter(connection.outputStream).use { it.write(body.toString()) }
+
+                val responseCode = connection.responseCode
+                if (responseCode == HttpURLConnection.HTTP_OK) {
+                    withContext(Dispatchers.Main) { onResult(true, "Added") }
+                } else {
+                    val errJson = connection.errorStream?.bufferedReader()?.readText() ?: ""
+                    val msg = try { JSONObject(errJson).optString("error", "Failed") } catch (_: Exception) { "Failed" }
+                    withContext(Dispatchers.Main) { onResult(false, msg) }
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) { onResult(false, "Failed: ${e.message}") }
+            }
+        }
+    }
+
+    fun removeCollaborator(token: String, userId: Int, context: Context, onResult: (Boolean) -> Unit) {
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val connection = URL("$BASE/packs/$token/collaborators/$userId").openConnection() as HttpURLConnection
+                connection.requestMethod = "DELETE"
+                connection.connectTimeout = 10000
+                connection.readTimeout = 10000
+                addAuth(connection, context)
+
+                val success = connection.responseCode == HttpURLConnection.HTTP_OK
+                withContext(Dispatchers.Main) { onResult(success) }
+            } catch (_: Exception) {
+                withContext(Dispatchers.Main) { onResult(false) }
             }
         }
     }

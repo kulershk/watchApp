@@ -13,6 +13,7 @@ object PackUpdater {
         if (packs.isEmpty()) return
 
         val baseUrl = AppSettings.getBaseUrl(context)
+        val authToken = AppSettings.getAuthToken(context)
 
         CoroutineScope(Dispatchers.IO).launch {
             for (pack in packs) {
@@ -21,6 +22,9 @@ object PackUpdater {
                     connection.requestMethod = "GET"
                     connection.connectTimeout = 10000
                     connection.readTimeout = 10000
+                    if (authToken != null) {
+                        connection.setRequestProperty("Authorization", "Bearer $authToken")
+                    }
 
                     if (connection.responseCode == HttpURLConnection.HTTP_OK) {
                         val json = connection.inputStream.bufferedReader().readText()
@@ -29,6 +33,10 @@ object PackUpdater {
 
                         if (remoteUpdated.isNotBlank() && remoteUpdated != pack.updated) {
                             val name = jsonObj.optString("name", "Pack ${pack.token}")
+                            val qLang = jsonObj.optString("question_lang", "")
+                            val aLang = jsonObj.optString("answer_lang", "")
+                            val author = jsonObj.optString("author", "")
+                            val dlCount = jsonObj.optInt("download_count", 0)
                             val wordsArray = jsonObj.getJSONArray("words")
                             val words = mutableListOf<Word>()
 
@@ -48,7 +56,11 @@ object PackUpdater {
                                 token = pack.token,
                                 name = name,
                                 updated = remoteUpdated,
-                                words = words
+                                words = words,
+                                questionLang = qLang,
+                                answerLang = aLang,
+                                author = author,
+                                downloadCount = dlCount
                             )
                             WordStorage.savePack(context, updated)
                             AudioCache.downloadPackAudio(context, words)
@@ -61,6 +73,7 @@ object PackUpdater {
 
     fun downloadPack(context: Context, token: String, onResult: (Boolean, String) -> Unit) {
         val baseUrl = AppSettings.getBaseUrl(context)
+        val authToken = AppSettings.getAuthToken(context)
 
         CoroutineScope(Dispatchers.IO).launch {
             try {
@@ -68,6 +81,9 @@ object PackUpdater {
                 connection.requestMethod = "GET"
                 connection.connectTimeout = 10000
                 connection.readTimeout = 10000
+                if (authToken != null) {
+                    connection.setRequestProperty("Authorization", "Bearer $authToken")
+                }
 
                 if (connection.responseCode == HttpURLConnection.HTTP_OK) {
                     val json = connection.inputStream.bufferedReader().readText()
@@ -75,6 +91,10 @@ object PackUpdater {
 
                     val name = jsonObj.optString("name", "Pack $token")
                     val updated = jsonObj.optString("updated_at", "")
+                    val qLang = jsonObj.optString("question_lang", "")
+                    val aLang = jsonObj.optString("answer_lang", "")
+                    val author = jsonObj.optString("author", "")
+                    val dlCount = jsonObj.optInt("download_count", 0)
                     val wordsArray = jsonObj.getJSONArray("words")
                     val words = mutableListOf<Word>()
 
@@ -90,7 +110,7 @@ object PackUpdater {
                         )
                     }
 
-                    val pack = WordPack(token = token, name = name, updated = updated, words = words)
+                    val pack = WordPack(token = token, name = name, updated = updated, words = words, questionLang = qLang, answerLang = aLang, author = author, downloadCount = dlCount)
                     WordStorage.savePack(context, pack)
                     AudioCache.downloadPackAudio(context, words)
 
@@ -116,6 +136,7 @@ object PackUpdater {
 
     fun updatePack(context: Context, token: String, onResult: (Boolean, String) -> Unit) {
         val baseUrl = AppSettings.getBaseUrl(context)
+        val authToken = AppSettings.getAuthToken(context)
 
         CoroutineScope(Dispatchers.IO).launch {
             try {
@@ -123,6 +144,9 @@ object PackUpdater {
                 connection.requestMethod = "GET"
                 connection.connectTimeout = 10000
                 connection.readTimeout = 10000
+                if (authToken != null) {
+                    connection.setRequestProperty("Authorization", "Bearer $authToken")
+                }
 
                 if (connection.responseCode == HttpURLConnection.HTTP_OK) {
                     val json = connection.inputStream.bufferedReader().readText()
@@ -130,6 +154,10 @@ object PackUpdater {
 
                     val name = jsonObj.optString("name", "Pack $token")
                     val updated = jsonObj.optString("updated_at", "")
+                    val qLang = jsonObj.optString("question_lang", "")
+                    val aLang = jsonObj.optString("answer_lang", "")
+                    val author = jsonObj.optString("author", "")
+                    val dlCount = jsonObj.optInt("download_count", 0)
                     val wordsArray = jsonObj.getJSONArray("words")
                     val words = mutableListOf<Word>()
 
@@ -145,7 +173,7 @@ object PackUpdater {
                         )
                     }
 
-                    val pack = WordPack(token = token, name = name, updated = updated, words = words)
+                    val pack = WordPack(token = token, name = name, updated = updated, words = words, questionLang = qLang, answerLang = aLang, author = author, downloadCount = dlCount)
                     WordStorage.savePack(context, pack)
                     AudioCache.downloadPackAudio(context, words)
 

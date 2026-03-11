@@ -646,12 +646,43 @@ fun SettingsScreen(onBack: () -> Unit, onLogout: () -> Unit, context: android.co
 
             item {
                 val userEmail = AppSettings.getUserEmail(context) ?: ""
+                val friendCode = AppSettings.getFriendCode(context) ?: ""
                 if (userEmail.isNotBlank()) {
                     Text(
                         "Signed in as $userEmail",
                         fontSize = 12.sp,
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
                     )
+                    if (friendCode.isNotBlank()) {
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Text(
+                                "Friend Code:",
+                                fontSize = 12.sp,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                            )
+                            val clipboardManager = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                            Text(
+                                friendCode,
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary,
+                                letterSpacing = 2.sp,
+                                modifier = Modifier.clickable {
+                                    clipboardManager.setPrimaryClip(android.content.ClipData.newPlainText("Friend Code", friendCode))
+                                    Toast.makeText(context, "Friend code copied!", Toast.LENGTH_SHORT).show()
+                                }
+                            )
+                        }
+                        Text(
+                            "Share this code so friends can collaborate on your packs",
+                            fontSize = 11.sp,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
+                        )
+                    }
                     Spacer(modifier = Modifier.height(8.dp))
                 }
                 Button(
