@@ -13,12 +13,12 @@ rootProject.file("version.properties").readLines().forEach { line ->
 }
 
 android {
-    namespace = "com.kana.watch"
+    namespace = "com.kana.phone"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.kana.watch"
-        minSdk = 30
+        applicationId = "com.kana.phone"
+        minSdk = 26
         targetSdk = 35
         versionCode = versionProps["versionCode"]!!.toInt()
         versionName = "${versionProps["versionMajor"]}.${versionProps["versionMinor"]}"
@@ -53,19 +53,13 @@ android {
 }
 
 dependencies {
-    // Wear OS
-    implementation("androidx.wear:wear:1.3.0")
-
-    // Compose for Wear OS
-    implementation("androidx.wear.compose:compose-material:1.2.1")
-    implementation("androidx.wear.compose:compose-foundation:1.2.1")
-    implementation("androidx.wear.compose:compose-navigation:1.2.1")
-
-    // Compose
     implementation("androidx.compose.ui:ui:1.5.4")
     implementation("androidx.compose.ui:ui-tooling-preview:1.5.4")
+    implementation("androidx.compose.material3:material3:1.1.2")
     implementation("androidx.activity:activity-compose:1.8.2")
-
-    // Lifecycle
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.7.0")
+    implementation("androidx.navigation:navigation-compose:2.7.6")
+    implementation("androidx.credentials:credentials:1.3.0")
+    implementation("androidx.credentials:credentials-play-services-auth:1.3.0")
+    implementation("com.google.android.libraries.identity.googleid:googleid:1.1.1")
 }

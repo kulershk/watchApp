@@ -1,4 +1,4 @@
-package com.kana.watch
+package com.kana.phone
 
 import android.content.Context
 import android.media.MediaPlayer
@@ -16,7 +16,6 @@ object AudioCache {
         return dir
     }
 
-    /** Build full URL from audio filename */
     fun buildUrl(audioFile: String): String {
         if (audioFile.isBlank()) return ""
         return "$AUDIO_BASE$audioFile"
@@ -28,7 +27,6 @@ object AudioCache {
         return if (file.exists()) file else null
     }
 
-    /** Download audio file to cache. Call from IO thread. */
     fun download(context: Context, audioFile: String) {
         if (audioFile.isBlank()) return
         val file = File(cacheDir(context), audioFile)
@@ -59,9 +57,7 @@ object AudioCache {
             player.setOnCompletionListener { it.release() }
             player.prepare()
             player.start()
-        } catch (_: Exception) {
-            // ignore playback errors
-        }
+        } catch (_: Exception) {}
     }
 
     /** Delete cached audio files for a list of filenames */
@@ -86,7 +82,6 @@ object AudioCache {
         deleteFiles(context, toDelete)
     }
 
-    /** Download all audio for a pack. Call from IO thread. */
     fun downloadPackAudio(context: Context, words: List<Word>) {
         for (word in words) {
             download(context, word.audioUrl)

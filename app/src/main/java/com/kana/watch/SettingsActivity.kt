@@ -41,8 +41,6 @@ class SettingsActivity : ComponentActivity() {
             KanaWatchTheme {
                 SettingsScreen(
                     currentInterval = AppSettings.getIntervalMinutes(this),
-                    hiraganaEnabled = AppSettings.isHiraganaEnabled(this),
-                    katakanaEnabled = AppSettings.isKatakanaEnabled(this),
                     packs = packs,
                     enabledPacks = enabledPacks,
                     onSaveInterval = { minutes ->
@@ -50,12 +48,6 @@ class SettingsActivity : ComponentActivity() {
                         if (AppSettings.isNotificationsActive(this)) {
                             NotificationScheduler.schedule(this, minutes)
                         }
-                    },
-                    onToggleHiragana = { enabled ->
-                        AppSettings.setHiraganaEnabled(this, enabled)
-                    },
-                    onToggleKatakana = { enabled ->
-                        AppSettings.setKatakanaEnabled(this, enabled)
                     },
                     onTogglePack = { token, enabled ->
                         val current = AppSettings.getEnabledPacks(this).toMutableSet()
@@ -68,7 +60,12 @@ class SettingsActivity : ComponentActivity() {
                         WordStorage.deletePack(this, token)
                         refreshUI()
                     },
-                    onClose = { finish() }
+                    onClose = { finish() },
+                    onUnpair = {
+                        AppSettings.unpair(this)
+                        Toast.makeText(this, "Unpaired from phone", Toast.LENGTH_SHORT).show()
+                        finish()
+                    }
                 )
             }
         }
@@ -150,25 +147,19 @@ class SettingsActivity : ComponentActivity() {
 @Composable
 fun SettingsScreen(
     currentInterval: Int,
-    hiraganaEnabled: Boolean,
-    katakanaEnabled: Boolean,
     packs: List<WordPack>,
     enabledPacks: Set<String>,
     onSaveInterval: (Int) -> Unit,
-    onToggleHiragana: (Boolean) -> Unit,
-    onToggleKatakana: (Boolean) -> Unit,
     onTogglePack: (String, Boolean) -> Unit,
     onUpdatePack: (String) -> Unit,
     onDeletePack: (String) -> Unit,
-    onClose: () -> Unit
+    onClose: () -> Unit,
+    onUnpair: () -> Unit
 ) {
     val presets = listOf(5, 10, 15, 20, 30, 45, 60, 90, 120)
     var selectedIndex by remember {
         mutableStateOf(presets.indexOf(currentInterval).coerceAtLeast(0))
     }
-    var hiragana by remember { mutableStateOf(hiraganaEnabled) }
-    var katakana by remember { mutableStateOf(katakanaEnabled) }
-
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -260,50 +251,6 @@ fun SettingsScreen(
                 }
             }
 
-            item { Spacer(modifier = Modifier.height(8.dp)) }
-
-            // --- Kana toggles ---
-            item {
-                Text(
-                    text = "Quiz Types",
-                    fontSize = 12.sp,
-                    color = MaterialTheme.colors.onSurface.copy(alpha = 0.6f),
-                    textAlign = TextAlign.Center
-                )
-            }
-
-            item {
-                ToggleChip(
-                    checked = hiragana,
-                    onCheckedChange = {
-                        hiragana = it
-                        onToggleHiragana(it)
-                    },
-                    label = { Text("Hiragana", fontSize = 13.sp) },
-                    secondaryLabel = { Text("ひらがな", fontSize = 10.sp) },
-                    toggleControl = {
-                        Switch(checked = hiragana)
-                    },
-                    modifier = Modifier.fillMaxWidth(0.85f)
-                )
-            }
-
-            item {
-                ToggleChip(
-                    checked = katakana,
-                    onCheckedChange = {
-                        katakana = it
-                        onToggleKatakana(it)
-                    },
-                    label = { Text("Katakana", fontSize = 13.sp) },
-                    secondaryLabel = { Text("カタカナ", fontSize = 10.sp) },
-                    toggleControl = {
-                        Switch(checked = katakana)
-                    },
-                    modifier = Modifier.fillMaxWidth(0.85f)
-                )
-            }
-
             // --- Word packs ---
             if (packs.isNotEmpty()) {
                 item { Spacer(modifier = Modifier.height(8.dp)) }
@@ -364,6 +311,20 @@ fun SettingsScreen(
                         }
                     }
                 }
+            }
+
+            // Unpair
+            item { Spacer(modifier = Modifier.height(12.dp)) }
+
+            item {
+                Chip(
+                    onClick = onUnpair,
+                    label = { Text("Unpair Watch", fontSize = 13.sp) },
+                    colors = ChipDefaults.chipColors(
+                        backgroundColor = MaterialTheme.colors.error
+                    ),
+                    modifier = Modifier.fillMaxWidth(0.85f)
+                )
             }
         }
     }

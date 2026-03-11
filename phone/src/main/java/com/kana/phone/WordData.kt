@@ -1,4 +1,4 @@
-package com.kana.watch
+package com.kana.phone
 
 import android.content.Context
 import org.json.JSONArray
@@ -87,7 +87,6 @@ object WordStorage {
         packs.removeAll { it.token == token }
         saveAll(context, packs)
 
-        // Remove from enabled list too
         val enabled = AppSettings.getEnabledPacks(context).toMutableSet()
         enabled.remove(token)
         AppSettings.setEnabledPacks(context, enabled)

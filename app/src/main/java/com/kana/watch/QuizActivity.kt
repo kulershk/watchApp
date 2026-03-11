@@ -26,7 +26,7 @@ class QuizActivity : ComponentActivity() {
 
         val character = intent.getStringExtra(QuizExtras.EXTRA_CHARACTER) ?: "あ"
         val romaji = intent.getStringExtra(QuizExtras.EXTRA_ROMAJI) ?: "a"
-        val type = intent.getStringExtra(QuizExtras.EXTRA_TYPE) ?: "HIRAGANA"
+        val type = intent.getStringExtra(QuizExtras.EXTRA_TYPE) ?: "WORD"
         val reading = intent.getStringExtra(QuizExtras.EXTRA_READING) ?: ""
         val audioUrl = intent.getStringExtra(QuizExtras.EXTRA_AUDIO_URL) ?: ""
 
@@ -46,39 +46,19 @@ class QuizActivity : ComponentActivity() {
     }
 
     private fun loadNext() {
-        val pool = mutableListOf<Any>()
+        val words = WordStorage.getEnabledWords(this)
 
-        if (AppSettings.isHiraganaEnabled(this)) {
-            pool.addAll(KanaData.hiragana)
-        }
-        if (AppSettings.isKatakanaEnabled(this)) {
-            pool.addAll(KanaData.katakana)
-        }
-        pool.addAll(WordStorage.getEnabledWords(this))
-
-        if (pool.isEmpty()) {
+        if (words.isEmpty()) {
             finish()
             return
         }
 
-        val item = pool.random()
-
-        when (item) {
-            is Kana -> {
-                intent.putExtra(QuizExtras.EXTRA_CHARACTER, item.character)
-                intent.putExtra(QuizExtras.EXTRA_ROMAJI, item.romaji)
-                intent.putExtra(QuizExtras.EXTRA_TYPE, item.type.name)
-                intent.putExtra(QuizExtras.EXTRA_READING, "")
-                intent.putExtra(QuizExtras.EXTRA_AUDIO_URL, "")
-            }
-            is Word -> {
-                intent.putExtra(QuizExtras.EXTRA_CHARACTER, item.question)
-                intent.putExtra(QuizExtras.EXTRA_ROMAJI, item.answer)
-                intent.putExtra(QuizExtras.EXTRA_TYPE, "WORD")
-                intent.putExtra(QuizExtras.EXTRA_READING, item.reading)
-                intent.putExtra(QuizExtras.EXTRA_AUDIO_URL, item.audioUrl)
-            }
-        }
+        val item = words.random()
+        intent.putExtra(QuizExtras.EXTRA_CHARACTER, item.question)
+        intent.putExtra(QuizExtras.EXTRA_ROMAJI, item.answer)
+        intent.putExtra(QuizExtras.EXTRA_TYPE, "WORD")
+        intent.putExtra(QuizExtras.EXTRA_READING, item.reading)
+        intent.putExtra(QuizExtras.EXTRA_AUDIO_URL, item.audioUrl)
         recreate()
     }
 }
@@ -98,12 +78,6 @@ fun QuizScreen(
     var revealed by remember(character) { mutableStateOf(false) }
     var hintShown by remember(character) { mutableStateOf(false) }
 
-    val typeLabel = when (type) {
-        "HIRAGANA" -> "ひらがな"
-        "KATAKANA" -> "カタカナ"
-        else -> ""
-    }
-
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -115,17 +89,6 @@ fun QuizScreen(
             verticalArrangement = Arrangement.Center,
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
         ) {
-            // Type label
-            if (typeLabel.isNotBlank()) {
-                Text(
-                    text = typeLabel,
-                    fontSize = 12.sp,
-                    color = MaterialTheme.colors.secondary,
-                    textAlign = TextAlign.Center
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-            }
-
             // Big character / question
             Text(
                 text = character,
@@ -190,22 +153,13 @@ fun QuizScreen(
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    CompactChip(
-                        onClick = onNext,
-                        label = { Text("Next", fontSize = 11.sp) },
-                        colors = ChipDefaults.chipColors(
-                            backgroundColor = MaterialTheme.colors.secondary
-                        )
+                CompactChip(
+                    onClick = onNext,
+                    label = { Text("Next", fontSize = 11.sp) },
+                    colors = ChipDefaults.chipColors(
+                        backgroundColor = MaterialTheme.colors.secondary
                     )
-                    CompactChip(
-                        onClick = onClose,
-                        label = { Text("Done", fontSize = 11.sp) },
-                        colors = ChipDefaults.chipColors(
-                            backgroundColor = MaterialTheme.colors.surface
-                        )
-                    )
-                }
+                )
             }
         }
     }

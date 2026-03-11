@@ -14,5 +14,6 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "KanaWatch"
+rootProject.name = "LanguageLearning"
 include(":app")
+include(":phone")

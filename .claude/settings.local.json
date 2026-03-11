@@ -4,7 +4,9 @@
       "Bash(mkdir -p /c/Users/kuler/Desktop/Stuff/watch/app/src/main/java/com/kana/watch && mkdir -p /c/Users/kuler/Desktop/Stuff/watch/app/src/main/java/com/kana/watch/theme && mkdir -p /c/Users/kuler/Desktop/Stuff/watch/app/src/main/res/values && mkdir -p /c/Users/kuler/Desktop/Stuff/watch/app/src/main/res/drawable && mkdir -p /c/Users/kuler/Desktop/Stuff/watch/gradle/wrapper)",
       "Read(//c/Users/kuler/AppData/Local/Android/Sdk/platform-tools/**)",
       "Read(//c/Users/kuler/AppData/Local/**)",
-      "Bash(grep -r \"wear.compose\" C:/Users/kuler/Desktop/Stuff/watch/app/build.gradle* 2>/dev/null | head -20)"
+      "Bash(grep -r \"wear.compose\" C:/Users/kuler/Desktop/Stuff/watch/app/build.gradle* 2>/dev/null | head -20)",
+      "Bash(cd \"C:/Users/kuler/Desktop/Stuff/watchWeb\" && npm install bcrypt jsonwebtoken google-auth-library)",
+      "Bash(openssl rand:*)"
     ]
   }
 }

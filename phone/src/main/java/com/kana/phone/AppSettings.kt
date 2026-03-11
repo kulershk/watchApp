@@ -1,4 +1,4 @@
-package com.kana.watch
+package com.kana.phone
 
 import android.content.Context
 
@@ -9,11 +9,11 @@ object AppSettings {
     private const val KEY_NOTIFICATIONS_ACTIVE = "notifications_active"
     private const val KEY_BASE_URL = "base_url"
     private const val KEY_ENABLED_PACKS = "enabled_packs"
-    private const val KEY_SYNC_TOKEN = "sync_token"
+    private const val KEY_AUTH_TOKEN = "auth_token"
+    private const val KEY_USER_EMAIL = "user_email"
 
     private const val DEFAULT_INTERVAL = 20
     private const val DEFAULT_URL = "https://watch.osrs.lv/api/words/"
-    private const val DEFAULT_API_URL = "https://watch.osrs.lv/api"
 
     fun getIntervalMinutes(context: Context): Int {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -40,11 +40,6 @@ object AppSettings {
         return prefs.getString(KEY_BASE_URL, DEFAULT_URL) ?: DEFAULT_URL
     }
 
-    fun setBaseUrl(context: Context, url: String) {
-        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        prefs.edit().putString(KEY_BASE_URL, url).apply()
-    }
-
     fun getEnabledPacks(context: Context): Set<String> {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         return prefs.getStringSet(KEY_ENABLED_PACKS, emptySet()) ?: emptySet()
@@ -55,22 +50,30 @@ object AppSettings {
         prefs.edit().putStringSet(KEY_ENABLED_PACKS, tokens).apply()
     }
 
-    fun getSyncToken(context: Context): String? {
+    fun getAuthToken(context: Context): String? {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        return prefs.getString(KEY_SYNC_TOKEN, null)
+        return prefs.getString(KEY_AUTH_TOKEN, null)
     }
 
-    fun setSyncToken(context: Context, token: String?) {
+    fun setAuthToken(context: Context, token: String?) {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        prefs.edit().putString(KEY_SYNC_TOKEN, token).apply()
+        prefs.edit().putString(KEY_AUTH_TOKEN, token).apply()
     }
 
-    fun isPaired(context: Context): Boolean = getSyncToken(context) != null
-
-    fun getApiUrl(context: Context): String = DEFAULT_API_URL
-
-    fun unpair(context: Context) {
+    fun getUserEmail(context: Context): String? {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        prefs.edit().remove(KEY_SYNC_TOKEN).apply()
+        return prefs.getString(KEY_USER_EMAIL, null)
+    }
+
+    fun setUserEmail(context: Context, email: String?) {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        prefs.edit().putString(KEY_USER_EMAIL, email).apply()
+    }
+
+    fun isLoggedIn(context: Context): Boolean = getAuthToken(context) != null
+
+    fun logout(context: Context) {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        prefs.edit().remove(KEY_AUTH_TOKEN).remove(KEY_USER_EMAIL).apply()
     }
 }

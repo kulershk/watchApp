@@ -1,4 +1,4 @@
-package com.kana.watch
+package com.kana.phone
 
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -25,26 +25,19 @@ class AlarmReceiver : BroadcastReceiver() {
         }
 
         val item = enabledWords.random()
-        showWordNotification(context, item)
-        NotificationScheduler.schedule(context, AppSettings.getIntervalMinutes(context))
-    }
 
-    private fun showWordNotification(context: Context, item: Word) {
-        val quizIntent = Intent(context, QuizActivity::class.java).apply {
+        val quizIntent = Intent(context, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
-            putExtra(QuizExtras.EXTRA_CHARACTER, item.question)
-            putExtra(QuizExtras.EXTRA_ROMAJI, item.answer)
-            putExtra(QuizExtras.EXTRA_TYPE, "WORD")
-            putExtra(QuizExtras.EXTRA_READING, item.reading)
-            putExtra(QuizExtras.EXTRA_AUDIO_URL, item.audioUrl)
+            putExtra("nav_route", "quiz")
+            putExtra("character", item.question)
+            putExtra("romaji", item.answer)
+            putExtra("type", "WORD")
+            putExtra("reading", item.reading)
+            putExtra("audio_url", item.audioUrl)
         }
 
-        sendNotification(
-            context,
-            title = "Language Learning!",
-            text = "What does ${item.question} mean?",
-            intent = quizIntent
-        )
+        sendNotification(context, "Language Learning!", "What does ${item.question} mean?", quizIntent)
+        NotificationScheduler.schedule(context, AppSettings.getIntervalMinutes(context))
     }
 
     private fun sendNotification(context: Context, title: String, text: String, intent: Intent) {
@@ -52,9 +45,7 @@ class AlarmReceiver : BroadcastReceiver() {
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
-                CHANNEL_ID,
-                "Language Learning",
-                NotificationManager.IMPORTANCE_HIGH
+                CHANNEL_ID, "Language Learning", NotificationManager.IMPORTANCE_HIGH
             ).apply {
                 description = "Periodic quiz notifications"
                 enableVibration(true)
@@ -63,9 +54,7 @@ class AlarmReceiver : BroadcastReceiver() {
         }
 
         val pendingIntent = PendingIntent.getActivity(
-            context,
-            0,
-            intent,
+            context, 0, intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
