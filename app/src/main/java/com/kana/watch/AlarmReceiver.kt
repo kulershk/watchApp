@@ -37,6 +37,7 @@ class AlarmReceiver : BroadcastReceiver() {
             putExtra(QuizExtras.EXTRA_TYPE, "WORD")
             putExtra(QuizExtras.EXTRA_READING, item.reading)
             putExtra(QuizExtras.EXTRA_AUDIO_URL, item.audioUrl)
+            putExtra(QuizExtras.EXTRA_IMAGE_URL, item.imageUrl)
         }
 
         sendNotification(

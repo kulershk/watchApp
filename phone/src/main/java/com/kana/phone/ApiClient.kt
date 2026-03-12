@@ -37,6 +37,7 @@ data class EditWord(
     var answer: String = "",
     var reading: String = "",
     var audio: String = "",
+    var image: String = "",
     var enabled: Boolean = true
 )
 
@@ -319,6 +320,7 @@ object ApiClient {
                                 answer = w.optString("answer", ""),
                                 reading = w.optString("reading", ""),
                                 audio = w.optString("audio", ""),
+                                image = w.optString("image", ""),
                                 enabled = w.optBoolean("enabled", true)
                             )
                         )
@@ -365,6 +367,7 @@ object ApiClient {
                     wo.put("answer", w.answer)
                     wo.put("reading", w.reading)
                     wo.put("audio", w.audio)
+                    wo.put("image", w.image)
                     wo.put("enabled", w.enabled)
                     wordsArr.put(wo)
                 }
@@ -411,6 +414,7 @@ object ApiClient {
                     wo.put("answer", w.answer)
                     wo.put("reading", w.reading)
                     wo.put("audio", w.audio)
+                    wo.put("image", w.image)
                     wo.put("enabled", w.enabled)
                     wordsArr.put(wo)
                 }
@@ -458,6 +462,63 @@ object ApiClient {
                 }
             } catch (e: Exception) {
                 withContext(Dispatchers.Main) { onResult(false, "Upload failed: ${e.message}") }
+            }
+        }
+    }
+
+    fun uploadImage(file: File, context: Context, onResult: (Boolean, String) -> Unit) {
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val bytes = file.readBytes()
+                val base64 = Base64.encodeToString(bytes, Base64.NO_WRAP)
+                val mime = when {
+                    file.name.endsWith(".png") -> "image/png"
+                    file.name.endsWith(".webp") -> "image/webp"
+                    else -> "image/jpeg"
+                }
+
+                val connection = URL("$BASE/images").openConnection() as HttpURLConnection
+                connection.requestMethod = "POST"
+                connection.setRequestProperty("Content-Type", "application/json")
+                connection.doOutput = true
+                connection.connectTimeout = 15000
+                connection.readTimeout = 15000
+                addAuth(connection, context)
+
+                val body = JSONObject()
+                body.put("data", "data:$mime;base64,$base64")
+                OutputStreamWriter(connection.outputStream).use { it.write(body.toString()) }
+
+                if (connection.responseCode == HttpURLConnection.HTTP_OK ||
+                    connection.responseCode == HttpURLConnection.HTTP_CREATED) {
+                    val json = connection.inputStream.bufferedReader().readText()
+                    val obj = JSONObject(json)
+                    val filename = obj.optString("filename", "")
+                    withContext(Dispatchers.Main) { onResult(true, filename) }
+                } else {
+                    val errJson = connection.errorStream?.bufferedReader()?.readText() ?: ""
+                    val msg = try { JSONObject(errJson).optString("error", "Upload failed") } catch (_: Exception) { "Upload failed" }
+                    withContext(Dispatchers.Main) { onResult(false, msg) }
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) { onResult(false, "Upload failed: ${e.message}") }
+            }
+        }
+    }
+
+    fun deleteImage(filename: String, context: Context, onResult: ((Boolean) -> Unit)? = null) {
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val connection = URL("$BASE/images/$filename").openConnection() as HttpURLConnection
+                connection.requestMethod = "DELETE"
+                connection.connectTimeout = 10000
+                connection.readTimeout = 10000
+                addAuth(connection, context)
+                val success = connection.responseCode == HttpURLConnection.HTTP_OK ||
+                        connection.responseCode == HttpURLConnection.HTTP_NO_CONTENT
+                onResult?.let { withContext(Dispatchers.Main) { it(success) } }
+            } catch (_: Exception) {
+                onResult?.let { withContext(Dispatchers.Main) { it(false) } }
             }
         }
     }

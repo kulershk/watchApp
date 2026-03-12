@@ -99,7 +99,8 @@ class MainActivity : ComponentActivity() {
                                     question = w.getString("question"),
                                     answer = w.getString("answer"),
                                     reading = w.optString("reading", ""),
-                                    audioUrl = w.optString("audio", "")
+                                    audioUrl = w.optString("audio", ""),
+                                    imageUrl = w.optString("image", "")
                                 )
                             )
                         }
@@ -112,6 +113,7 @@ class MainActivity : ComponentActivity() {
                             val pack = WordPack(token = token, name = name, updated = updatedAt, words = words, questionLang = qLang, answerLang = aLang, author = author, downloadCount = dlCount)
                             WordStorage.savePack(this@MainActivity, pack)
                             AudioCache.downloadPackAudio(this@MainActivity, words)
+                            ImageCache.downloadPackImages(this@MainActivity, words)
 
                             // Auto-enable new packs
                             if (localPack == null) {
@@ -197,6 +199,7 @@ class MainActivity : ComponentActivity() {
             putExtra(QuizExtras.EXTRA_TYPE, "WORD")
             putExtra(QuizExtras.EXTRA_READING, item.reading)
             putExtra(QuizExtras.EXTRA_AUDIO_URL, item.audioUrl)
+            putExtra(QuizExtras.EXTRA_IMAGE_URL, item.imageUrl)
         })
     }
 

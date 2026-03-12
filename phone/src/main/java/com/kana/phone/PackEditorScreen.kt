@@ -1,6 +1,10 @@
 package com.kana.phone
 
+import android.net.Uri
 import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -10,10 +14,13 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import java.io.File
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -502,6 +509,20 @@ fun PackEditorScreen(
 
                         Spacer(modifier = Modifier.height(4.dp))
 
+                        // Image upload for question
+                        WordImageControls(
+                            image = word.image,
+                            index = index,
+                            context = context,
+                            onImageChanged = { newImage ->
+                                val updated = words.toMutableList()
+                                updated[index] = updated[index].copy(image = newImage)
+                                words = updated
+                            }
+                        )
+
+                        Spacer(modifier = Modifier.height(4.dp))
+
                         OutlinedTextField(
                             value = word.answer,
                             onValueChange = {
@@ -667,6 +688,113 @@ fun PackEditorScreen(
             }
 
             item { Spacer(modifier = Modifier.height(32.dp)) }
+        }
+    }
+}
+
+@Composable
+fun WordImageControls(
+    image: String,
+    index: Int,
+    context: android.content.Context,
+    onImageChanged: (String) -> Unit
+) {
+    var uploading by remember { mutableStateOf(false) }
+
+    val launcher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        if (uri == null) return@rememberLauncherForActivityResult
+        uploading = true
+        try {
+            val tempFile = File(context.cacheDir, "upload_img_$index.jpg")
+            // Decode and resize if needed (max 800px)
+            val inputStream = context.contentResolver.openInputStream(uri)
+            val originalBitmap = android.graphics.BitmapFactory.decodeStream(inputStream)
+            inputStream?.close()
+            if (originalBitmap == null) {
+                uploading = false
+                Toast.makeText(context, "Failed to read image", Toast.LENGTH_SHORT).show()
+                return@rememberLauncherForActivityResult
+            }
+            val maxDim = 800
+            val bmp = if (originalBitmap.width > maxDim || originalBitmap.height > maxDim) {
+                val scale = minOf(maxDim.toFloat() / originalBitmap.width, maxDim.toFloat() / originalBitmap.height)
+                val w = (originalBitmap.width * scale).toInt()
+                val h = (originalBitmap.height * scale).toInt()
+                android.graphics.Bitmap.createScaledBitmap(originalBitmap, w, h, true)
+            } else originalBitmap
+            tempFile.outputStream().use { out ->
+                bmp.compress(android.graphics.Bitmap.CompressFormat.JPEG, 85, out)
+            }
+            if (bmp !== originalBitmap) bmp.recycle()
+            originalBitmap.recycle()
+            ApiClient.uploadImage(tempFile, context) { success, result ->
+                uploading = false
+                if (success) {
+                    onImageChanged(result)
+                } else {
+                    Toast.makeText(context, result, Toast.LENGTH_SHORT).show()
+                }
+                tempFile.delete()
+            }
+        } catch (e: Exception) {
+            uploading = false
+            Toast.makeText(context, "Failed to read image", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        if (image.isNotBlank()) {
+            // Show thumbnail preview
+            val cachedFile = ImageCache.getCachedFile(context, image)
+            if (cachedFile != null) {
+                val bitmap = remember(image) {
+                    android.graphics.BitmapFactory.decodeFile(cachedFile.absolutePath)
+                }
+                if (bitmap != null) {
+                    Image(
+                        bitmap = bitmap.asImageBitmap(),
+                        contentDescription = "Question image",
+                        modifier = Modifier.size(48.dp),
+                        contentScale = ContentScale.Crop
+                    )
+                }
+            } else {
+                Text(
+                    "img: ${image.take(12)}...",
+                    fontSize = 11.sp,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                )
+            }
+            TextButton(
+                onClick = {
+                    ApiClient.deleteImage(image, context)
+                    onImageChanged("")
+                },
+                colors = ButtonDefaults.textButtonColors(
+                    contentColor = MaterialTheme.colorScheme.error
+                )
+            ) { Text("Remove", fontSize = 12.sp) }
+        }
+
+        OutlinedButton(
+            onClick = { launcher.launch("image/*") },
+            enabled = !uploading,
+            shape = RoundedCornerShape(8.dp),
+            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp)
+        ) {
+            Text(
+                when {
+                    uploading -> "Uploading..."
+                    image.isNotBlank() -> "Change Image"
+                    else -> "Add Image"
+                },
+                fontSize = 12.sp
+            )
         }
     }
 }

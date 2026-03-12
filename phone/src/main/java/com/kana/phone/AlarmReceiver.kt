@@ -34,6 +34,7 @@ class AlarmReceiver : BroadcastReceiver() {
             putExtra("type", "WORD")
             putExtra("reading", item.reading)
             putExtra("audio_url", item.audioUrl)
+            putExtra("image_url", item.imageUrl)
         }
 
         sendNotification(context, "Language Learning!", "What does ${item.question} mean?", quizIntent)

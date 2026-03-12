@@ -47,7 +47,8 @@ object PackUpdater {
                                         question = w.getString("question"),
                                         answer = w.getString("answer"),
                                         reading = w.optString("reading", ""),
-                                        audioUrl = w.optString("audio", "")
+                                        audioUrl = w.optString("audio", ""),
+                                        imageUrl = w.optString("image", "")
                                     )
                                 )
                             }
@@ -64,6 +65,7 @@ object PackUpdater {
                             )
                             WordStorage.savePack(context, updated)
                             AudioCache.downloadPackAudio(context, words)
+                            ImageCache.downloadPackImages(context, words)
                         }
                     }
                 } catch (_: Exception) {}

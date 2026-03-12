@@ -11,6 +11,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -53,7 +54,8 @@ class MainActivity : ComponentActivity() {
                 romaji = intent.getStringExtra("romaji") ?: "",
                 type = intent.getStringExtra("type") ?: "",
                 reading = intent.getStringExtra("reading") ?: "",
-                audioUrl = intent.getStringExtra("audio_url") ?: ""
+                audioUrl = intent.getStringExtra("audio_url") ?: "",
+                imageUrl = intent.getStringExtra("image_url") ?: ""
             )
         } else null
 
@@ -70,14 +72,15 @@ data class QuizItem(
     val romaji: String,
     val type: String,
     val reading: String,
-    val audioUrl: String
+    val audioUrl: String,
+    val imageUrl: String = ""
 )
 
 fun getRandomQuizItem(context: android.content.Context): QuizItem? {
     val words = WordStorage.getEnabledWords(context)
     if (words.isEmpty()) return null
     val item = words.random()
-    return QuizItem(item.question, item.answer, "WORD", item.reading, item.audioUrl)
+    return QuizItem(item.question, item.answer, "WORD", item.reading, item.audioUrl, item.imageUrl)
 }
 
 enum class Screen { LOGIN, REGISTER, HOME, QUIZ, SETTINGS, PACK_LIST, PACK_EDITOR, BROWSE }
@@ -126,6 +129,7 @@ fun AppContent(context: android.content.Context, initialQuiz: QuizItem?) {
                     type = item.type,
                     reading = item.reading,
                     audioUrl = item.audioUrl,
+                    imageUrl = item.imageUrl,
                     onNext = {
                         val next = getRandomQuizItem(context)
                         if (next != null) {
@@ -298,11 +302,13 @@ fun QuizScreen(
     type: String,
     reading: String,
     audioUrl: String,
+    imageUrl: String = "",
     onNext: () -> Unit,
     onBack: () -> Unit
 ) {
     val context = LocalContext.current
     val hasAudio = audioUrl.isNotBlank() && AudioCache.getCachedFile(context, audioUrl) != null
+    val imageFile = if (imageUrl.isNotBlank()) ImageCache.getCachedFile(context, imageUrl) else null
     var revealed by remember(character) { mutableStateOf(false) }
     var hintShown by remember(character) { mutableStateOf(false) }
 
@@ -317,18 +323,49 @@ fun QuizScreen(
             verticalArrangement = Arrangement.Center,
             modifier = Modifier.padding(32.dp)
         ) {
-            Text(
-                text = character,
-                fontSize = if (character.length > 4) 48.sp else 72.sp,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onBackground,
-                textAlign = TextAlign.Center,
-                modifier = if (hasAudio) Modifier
-                    .border(2.dp, MaterialTheme.colorScheme.secondary, RoundedCornerShape(12.dp))
-                    .clickable { AudioCache.play(context, audioUrl) }
-                    .padding(horizontal = 20.dp, vertical = 8.dp)
-                else Modifier
-            )
+            if (imageFile != null) {
+                val bitmap = remember(imageUrl) {
+                    android.graphics.BitmapFactory.decodeFile(imageFile.absolutePath)
+                }
+                if (bitmap != null) {
+                    androidx.compose.foundation.Image(
+                        bitmap = bitmap.asImageBitmap(),
+                        contentDescription = "Question image",
+                        modifier = Modifier
+                            .sizeIn(maxWidth = 250.dp, maxHeight = 250.dp)
+                            .then(
+                                if (hasAudio) Modifier
+                                    .border(2.dp, MaterialTheme.colorScheme.secondary, RoundedCornerShape(12.dp))
+                                    .clickable { AudioCache.play(context, audioUrl) }
+                                    .padding(4.dp)
+                                else Modifier
+                            ),
+                        contentScale = androidx.compose.ui.layout.ContentScale.Fit
+                    )
+                }
+                if (character.isNotBlank()) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = character,
+                        fontSize = 20.sp,
+                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
+                        textAlign = TextAlign.Center
+                    )
+                }
+            } else {
+                Text(
+                    text = character,
+                    fontSize = if (character.length > 4) 48.sp else 72.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onBackground,
+                    textAlign = TextAlign.Center,
+                    modifier = if (hasAudio) Modifier
+                        .border(2.dp, MaterialTheme.colorScheme.secondary, RoundedCornerShape(12.dp))
+                        .clickable { AudioCache.play(context, audioUrl) }
+                        .padding(horizontal = 20.dp, vertical = 8.dp)
+                    else Modifier
+                )
+            }
 
             if (reading.isNotBlank() && (hintShown || revealed)) {
                 Spacer(modifier = Modifier.height(8.dp))

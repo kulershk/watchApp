@@ -8,7 +8,8 @@ data class Word(
     val question: String,
     val answer: String,
     val reading: String = "",
-    val audioUrl: String = ""
+    val audioUrl: String = "",
+    val imageUrl: String = ""
 )
 
 data class WordPack(
@@ -32,6 +33,7 @@ object WordStorage {
         val oldPack = existing.find { it.token == pack.token }
         if (oldPack != null) {
             AudioCache.cleanOldAudio(context, oldPack.words, pack.words)
+            ImageCache.cleanOldImages(context, oldPack.words, pack.words)
         }
         existing.removeAll { it.token == pack.token }
         existing.add(pack)
@@ -57,7 +59,8 @@ object WordStorage {
                         question = wordObj.getString("question"),
                         answer = wordObj.getString("answer"),
                         reading = wordObj.optString("reading", ""),
-                        audioUrl = wordObj.optString("audio", "")
+                        audioUrl = wordObj.optString("audio", ""),
+                        imageUrl = wordObj.optString("image", "")
                     )
                 )
             }
@@ -91,6 +94,7 @@ object WordStorage {
         val pack = packs.find { it.token == token }
         if (pack != null) {
             AudioCache.deletePackAudio(context, pack.words)
+            ImageCache.deletePackImages(context, pack.words)
         }
         packs.removeAll { it.token == token }
         saveAll(context, packs)
@@ -117,6 +121,7 @@ object WordStorage {
                 wordObj.put("answer", w.answer)
                 wordObj.put("reading", w.reading)
                 wordObj.put("audio", w.audioUrl)
+                wordObj.put("image", w.imageUrl)
                 wordsArray.put(wordObj)
             }
             packObj.put("words", wordsArray)
