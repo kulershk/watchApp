@@ -370,6 +370,31 @@ object ApiClient {
         }
     }
 
+    fun generateShareCode(token: String, context: Context, onResult: (Boolean, String) -> Unit) {
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val connection = URL("$BASE/packs/$token/share").openConnection() as HttpURLConnection
+                connection.requestMethod = "POST"
+                connection.setRequestProperty("Content-Type", "application/json")
+                connection.doOutput = true
+                connection.connectTimeout = 10000
+                connection.readTimeout = 10000
+                addAuth(connection, context)
+                OutputStreamWriter(connection.outputStream).use { it.write("{}") }
+
+                if (connection.responseCode == HttpURLConnection.HTTP_OK) {
+                    val json = connection.inputStream.bufferedReader().readText()
+                    val code = JSONObject(json).getString("code")
+                    withContext(Dispatchers.Main) { onResult(true, code) }
+                } else {
+                    withContext(Dispatchers.Main) { onResult(false, "Failed to generate share code") }
+                }
+            } catch (_: Exception) {
+                withContext(Dispatchers.Main) { onResult(false, "Connection failed") }
+            }
+        }
+    }
+
     fun fetchPackPreview(token: String, onResult: (Boolean, List<Word>) -> Unit) {
         CoroutineScope(Dispatchers.IO).launch {
             try {

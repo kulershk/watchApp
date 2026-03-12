@@ -1,10 +1,13 @@
 package com.kana.phone
 
+import android.content.Intent
 import android.widget.Toast
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -28,10 +31,27 @@ fun PackListScreen(
     var localTokens by remember { mutableStateOf(localPacks.map { it.token }.toSet()) }
     var downloadingTokens by remember { mutableStateOf(setOf<String>()) }
 
+    var syncingTokens by remember { mutableStateOf(setOf<String>()) }
+
     LaunchedEffect(Unit) {
         ApiClient.fetchPackList(context) { success, result ->
             packs = result
             loading = false
+
+            // Auto-sync out-of-date local packs
+            if (success) {
+                for (remotePack in result) {
+                    val localPack = localPacks.find { it.token == remotePack.token }
+                    if (localPack != null && localPack.updated != remotePack.updatedAt) {
+                        syncingTokens = syncingTokens + remotePack.token
+                        PackUpdater.updatePack(context, remotePack.token) { _, _ ->
+                            syncingTokens = syncingTokens - remotePack.token
+                            localPacks = WordStorage.loadAllPacks(context)
+                            localTokens = localPacks.map { it.token }.toSet()
+                        }
+                    }
+                }
+            }
         }
     }
 
@@ -94,6 +114,7 @@ fun PackListScreen(
             ) {
                 items(packs, key = { it.token }) { pack ->
                     val isLocal = pack.token in localTokens
+                    val isSyncing = pack.token in syncingTokens
 
                     Card(
                         modifier = Modifier.fillMaxWidth(),
@@ -145,7 +166,24 @@ fun PackListScreen(
                                 }
                             }
 
-                            if (pack.updatedAt.isNotBlank()) {
+                            if (isSyncing) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                    modifier = Modifier.padding(top = 4.dp)
+                                ) {
+                                    CircularProgressIndicator(
+                                        modifier = Modifier.size(12.dp),
+                                        strokeWidth = 2.dp,
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
+                                    Text(
+                                        "Syncing...",
+                                        fontSize = 11.sp,
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
+                                }
+                            } else if (pack.updatedAt.isNotBlank()) {
                                 val dateStr = pack.updatedAt.take(10)
                                 Text(
                                     "Updated: $dateStr",
@@ -162,17 +200,43 @@ fun PackListScreen(
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                FilledTonalButton(
-                                    onClick = {
-                                        if (isLocal) {
-                                            onEditPack(pack.token)
-                                        } else {
-                                            Toast.makeText(context, "Download the pack first to edit", Toast.LENGTH_SHORT).show()
-                                        }
-                                    },
-                                    enabled = isLocal,
-                                    shape = RoundedCornerShape(8.dp)
-                                ) { Text("Edit") }
+                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    FilledTonalButton(
+                                        onClick = {
+                                            if (isLocal) {
+                                                onEditPack(pack.token)
+                                            } else {
+                                                Toast.makeText(context, "Download the pack first to edit", Toast.LENGTH_SHORT).show()
+                                            }
+                                        },
+                                        enabled = isLocal,
+                                        shape = RoundedCornerShape(8.dp)
+                                    ) { Text("Edit") }
+
+                                    var sharing by remember { mutableStateOf(false) }
+                                    IconButton(
+                                        onClick = {
+                                            sharing = true
+                                            ApiClient.generateShareCode(pack.token, context) { success, code ->
+                                                sharing = false
+                                                if (success) {
+                                                    val packName = pack.name.ifBlank { "Unnamed" }
+                                                    val shareText = "Check out my word pack \"$packName\" on Language Learning!\nDownload it with share code: $code"
+                                                    val intent = Intent(Intent.ACTION_SEND).apply {
+                                                        type = "text/plain"
+                                                        putExtra(Intent.EXTRA_TEXT, shareText)
+                                                    }
+                                                    context.startActivity(Intent.createChooser(intent, "Share pack"))
+                                                } else {
+                                                    Toast.makeText(context, code, Toast.LENGTH_SHORT).show()
+                                                }
+                                            }
+                                        },
+                                        enabled = !sharing
+                                    ) {
+                                        Icon(Icons.Filled.Share, contentDescription = "Share", tint = MaterialTheme.colorScheme.primary)
+                                    }
+                                }
 
                                 if (pack.token in localTokens) {
                                     OutlinedButton(
@@ -260,17 +324,24 @@ fun PackListScreen(
 
                                 Spacer(modifier = Modifier.height(8.dp))
 
-                                Button(
-                                    onClick = {
-                                        WordStorage.deletePack(context, pack.token)
-                                        localPacks = WordStorage.loadAllPacks(context)
-                                        localTokens = localPacks.map { it.token }.toSet()
-                                    },
-                                    colors = ButtonDefaults.buttonColors(
-                                        containerColor = MaterialTheme.colorScheme.error
-                                    ),
-                                    shape = RoundedCornerShape(8.dp)
-                                ) { Text("Remove from phone") }
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Button(
+                                        onClick = {
+                                            WordStorage.deletePack(context, pack.token)
+                                            localPacks = WordStorage.loadAllPacks(context)
+                                            localTokens = localPacks.map { it.token }.toSet()
+                                        },
+                                        colors = ButtonDefaults.buttonColors(
+                                            containerColor = MaterialTheme.colorScheme.error
+                                        ),
+                                        shape = RoundedCornerShape(8.dp)
+                                    ) { Text("Remove") }
+
+                                }
                             }
                         }
                     }

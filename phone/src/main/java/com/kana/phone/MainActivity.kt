@@ -217,12 +217,57 @@ fun HomeScreen(
     var isActive by remember { mutableStateOf(AppSettings.isNotificationsActive(context)) }
     val intervalMinutes = remember { AppSettings.getIntervalMinutes(context) }
     val snackbarHostState = remember { SnackbarHostState() }
+    var showShareCodeDialog by remember { mutableStateOf(false) }
+    var shareCodeInput by remember { mutableStateOf("") }
+    var redeemingCode by remember { mutableStateOf(false) }
 
     LaunchedEffect(syncMessage) {
         if (syncMessage != null) {
             snackbarHostState.showSnackbar(syncMessage)
             onSyncMessageDismissed()
         }
+    }
+
+    if (showShareCodeDialog) {
+        AlertDialog(
+            onDismissRequest = { if (!redeemingCode) { showShareCodeDialog = false; shareCodeInput = "" } },
+            title = { Text("Enter Share Code") },
+            text = {
+                OutlinedTextField(
+                    value = shareCodeInput,
+                    onValueChange = { shareCodeInput = it.take(8) },
+                    placeholder = { Text("8-character code") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        if (shareCodeInput.length == 8) {
+                            redeemingCode = true
+                            PackUpdater.redeemShareCode(context, shareCodeInput) { success, message ->
+                                redeemingCode = false
+                                Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+                                if (success) {
+                                    showShareCodeDialog = false
+                                    shareCodeInput = ""
+                                }
+                            }
+                        } else {
+                            Toast.makeText(context, "Code must be 8 characters", Toast.LENGTH_SHORT).show()
+                        }
+                    },
+                    enabled = shareCodeInput.length == 8 && !redeemingCode
+                ) { Text(if (redeemingCode) "Downloading..." else "Redeem") }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { showShareCodeDialog = false; shareCodeInput = "" },
+                    enabled = !redeemingCode
+                ) { Text("Cancel") }
+            }
+        )
     }
 
     Scaffold(
@@ -341,6 +386,14 @@ fun HomeScreen(
                     Text("Public packs from others", fontSize = 12.sp,
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
                 }
+            }
+
+            OutlinedButton(
+                onClick = { showShareCodeDialog = true },
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(8.dp)
+            ) {
+                Text("Redeem Share Code", fontSize = 16.sp)
             }
 
             Button(

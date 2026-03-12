@@ -147,6 +147,69 @@ object PackUpdater {
         }
     }
 
+    fun redeemShareCode(context: Context, code: String, onResult: (Boolean, String) -> Unit) {
+        val authToken = AppSettings.getAuthToken(context)
+
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val connection = java.net.URL("https://watch.osrs.lv/api/packs/share/$code").openConnection() as HttpURLConnection
+                connection.requestMethod = "GET"
+                connection.connectTimeout = 10000
+                connection.readTimeout = 10000
+                if (authToken != null) {
+                    connection.setRequestProperty("Authorization", "Bearer $authToken")
+                }
+
+                if (connection.responseCode == HttpURLConnection.HTTP_OK) {
+                    val json = connection.inputStream.bufferedReader().readText()
+                    val jsonObj = JSONObject(json)
+
+                    val token = jsonObj.getString("token")
+                    val name = jsonObj.optString("name", "Pack $token")
+                    val updated = jsonObj.optString("updated_at", "")
+                    val qLang = jsonObj.optString("question_lang", "")
+                    val aLang = jsonObj.optString("answer_lang", "")
+                    val author = jsonObj.optString("author", "")
+                    val dlCount = jsonObj.optInt("download_count", 0)
+                    val wordsArray = jsonObj.getJSONArray("words")
+                    val words = mutableListOf<Word>()
+
+                    for (i in 0 until wordsArray.length()) {
+                        val w = wordsArray.getJSONObject(i)
+                        words.add(
+                            Word(
+                                question = w.getString("question"),
+                                answer = w.getString("answer"),
+                                reading = w.optString("reading", ""),
+                                audioUrl = w.optString("audio", ""),
+                                imageUrl = w.optString("image", "")
+                            )
+                        )
+                    }
+
+                    val pack = WordPack(token = token, name = name, updated = updated, words = words, questionLang = qLang, answerLang = aLang, author = author, downloadCount = dlCount)
+                    WordStorage.savePack(context, pack)
+                    AudioCache.downloadPackAudio(context, words)
+                    ImageCache.downloadPackImages(context, words)
+
+                    val enabled = AppSettings.getEnabledPacks(context).toMutableSet()
+                    enabled.add(token)
+                    AppSettings.setEnabledPacks(context, enabled)
+
+                    withContext(Dispatchers.Main) {
+                        onResult(true, "Downloaded \"$name\" (${words.size} words)")
+                    }
+                } else if (connection.responseCode == 410) {
+                    withContext(Dispatchers.Main) { onResult(false, "Share code expired") }
+                } else {
+                    withContext(Dispatchers.Main) { onResult(false, "Invalid share code") }
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) { onResult(false, "Connection failed: ${e.message}") }
+            }
+        }
+    }
+
     fun updatePack(context: Context, token: String, onResult: (Boolean, String) -> Unit) {
         val baseUrl = AppSettings.getBaseUrl(context)
         val authToken = AppSettings.getAuthToken(context)
