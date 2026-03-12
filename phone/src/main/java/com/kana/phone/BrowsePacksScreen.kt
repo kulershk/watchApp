@@ -64,26 +64,43 @@ fun BrowsePacksScreen(
                 .padding(padding)
         ) {
             // Search bar
-            OutlinedTextField(
-                value = searchQuery,
-                onValueChange = { searchQuery = it },
-                placeholder = { Text("Search packs...") },
-                singleLine = true,
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp, vertical = 8.dp),
-                trailingIcon = {
-                    FilledTonalButton(
-                        onClick = { loadPacks() },
-                        contentPadding = PaddingValues(horizontal = 12.dp),
-                        shape = RoundedCornerShape(8.dp)
-                    ) { Text("Search") }
-                },
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = MaterialTheme.colorScheme.primary,
-                    cursorColor = MaterialTheme.colorScheme.primary
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                OutlinedTextField(
+                    value = searchQuery,
+                    onValueChange = { searchQuery = it },
+                    placeholder = { Text("Search packs...") },
+                    singleLine = true,
+                    modifier = Modifier.weight(1f),
+                    trailingIcon = {
+                        if (searchQuery.isNotBlank()) {
+                            IconButton(onClick = {
+                                searchQuery = ""
+                                loadPacks()
+                            }) {
+                                Text("✕", fontSize = 18.sp)
+                            }
+                        }
+                    },
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        cursorColor = MaterialTheme.colorScheme.primary
+                    )
                 )
-            )
+                Button(
+                    onClick = { loadPacks() },
+                    contentPadding = PaddingValues(horizontal = 16.dp),
+                    shape = RoundedCornerShape(8.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary
+                    )
+                ) { Text("Search") }
+            }
 
             // Language filters
             Row(
