@@ -107,7 +107,8 @@ object PackUpdater {
                                 question = w.getString("question"),
                                 answer = w.getString("answer"),
                                 reading = w.optString("reading", ""),
-                                audioUrl = w.optString("audio", "")
+                                audioUrl = w.optString("audio", ""),
+                                imageUrl = w.optString("image", "")
                             )
                         )
                     }
@@ -115,6 +116,7 @@ object PackUpdater {
                     val pack = WordPack(token = token, name = name, updated = updated, words = words, questionLang = qLang, answerLang = aLang, author = author, downloadCount = dlCount)
                     WordStorage.savePack(context, pack)
                     AudioCache.downloadPackAudio(context, words)
+                    ImageCache.downloadPackImages(context, words)
 
                     val enabled = AppSettings.getEnabledPacks(context).toMutableSet()
                     enabled.add(token)
@@ -170,7 +172,8 @@ object PackUpdater {
                                 question = w.getString("question"),
                                 answer = w.getString("answer"),
                                 reading = w.optString("reading", ""),
-                                audioUrl = w.optString("audio", "")
+                                audioUrl = w.optString("audio", ""),
+                                imageUrl = w.optString("image", "")
                             )
                         )
                     }
@@ -178,6 +181,7 @@ object PackUpdater {
                     val pack = WordPack(token = token, name = name, updated = updated, words = words, questionLang = qLang, answerLang = aLang, author = author, downloadCount = dlCount)
                     WordStorage.savePack(context, pack)
                     AudioCache.downloadPackAudio(context, words)
+                    ImageCache.downloadPackImages(context, words)
 
                     withContext(Dispatchers.Main) {
                         onResult(true, "Updated \"$name\" (${words.size} words)")
