@@ -365,7 +365,9 @@ object ApiClient {
                             Word(
                                 question = w.getString("question"),
                                 answer = w.getString("answer"),
-                                reading = w.optString("reading", "")
+                                reading = w.optString("reading", ""),
+                                audioUrl = w.optString("audio", ""),
+                                imageUrl = w.optString("image", "")
                             )
                         )
                     }

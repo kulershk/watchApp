@@ -1,6 +1,9 @@
 package com.kana.phone
 
+import android.media.MediaPlayer
 import android.widget.Toast
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.FlowRow
@@ -8,16 +11,21 @@ import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import kotlinx.coroutines.*
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
@@ -465,33 +473,104 @@ fun BrowsePacksScreen(
                                     verticalArrangement = Arrangement.spacedBy(4.dp)
                                 ) {
                                     itemsIndexed(previewWords) { index, word ->
-                                        Row(
-                                            modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-                                            horizontalArrangement = Arrangement.SpaceBetween
-                                        ) {
-                                            Text(
-                                                word.question,
-                                                fontSize = 15.sp,
-                                                modifier = Modifier.weight(1f),
-                                                maxLines = 1,
-                                                overflow = TextOverflow.Ellipsis
-                                            )
-                                            Text(
-                                                word.answer,
-                                                fontSize = 15.sp,
-                                                color = MaterialTheme.colorScheme.primary,
-                                                modifier = Modifier.weight(1f),
-                                                maxLines = 1,
-                                                overflow = TextOverflow.Ellipsis,
-                                                textAlign = androidx.compose.ui.text.style.TextAlign.End
-                                            )
-                                        }
-                                        if (word.reading.isNotBlank()) {
-                                            Text(
-                                                word.reading,
-                                                fontSize = 12.sp,
-                                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
-                                            )
+                                        Column(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+                                            // Image
+                                            if (word.imageUrl.isNotBlank()) {
+                                                var bitmap by remember(word.imageUrl) { mutableStateOf<android.graphics.Bitmap?>(null) }
+                                                LaunchedEffect(word.imageUrl) {
+                                                    withContext(Dispatchers.IO) {
+                                                        ImageCache.download(context, word.imageUrl)
+                                                    }
+                                                    val file = ImageCache.getCachedFile(context, word.imageUrl)
+                                                    if (file != null) {
+                                                        bitmap = android.graphics.BitmapFactory.decodeFile(file.absolutePath)
+                                                    }
+                                                }
+                                                if (bitmap != null) {
+                                                    Image(
+                                                        bitmap = bitmap!!.asImageBitmap(),
+                                                        contentDescription = "Word image",
+                                                        modifier = Modifier
+                                                            .fillMaxWidth()
+                                                            .heightIn(max = 120.dp)
+                                                            .clip(RoundedCornerShape(8.dp)),
+                                                        contentScale = ContentScale.Fit
+                                                    )
+                                                    Spacer(modifier = Modifier.height(4.dp))
+                                                }
+                                            }
+
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                horizontalArrangement = Arrangement.SpaceBetween
+                                            ) {
+                                                // Audio play button
+                                                if (word.audioUrl.isNotBlank()) {
+                                                    var playing by remember { mutableStateOf(false) }
+                                                    Box(
+                                                        modifier = Modifier
+                                                            .size(28.dp)
+                                                            .clip(CircleShape)
+                                                            .background(
+                                                                if (playing) MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
+                                                                else MaterialTheme.colorScheme.primary
+                                                            )
+                                                            .clickable {
+                                                                if (playing) return@clickable
+                                                                playing = true
+                                                                CoroutineScope(Dispatchers.IO).launch {
+                                                                    AudioCache.download(context, word.audioUrl)
+                                                                    withContext(Dispatchers.Main) {
+                                                                        val cached = AudioCache.getCachedFile(context, word.audioUrl)
+                                                                        if (cached != null) {
+                                                                            try {
+                                                                                val player = MediaPlayer()
+                                                                                player.setDataSource(cached.absolutePath)
+                                                                                player.setOnCompletionListener { it.release(); playing = false }
+                                                                                player.setOnErrorListener { mp, _, _ -> mp.release(); playing = false; true }
+                                                                                player.prepare()
+                                                                                player.start()
+                                                                            } catch (_: Exception) { playing = false }
+                                                                        } else { playing = false }
+                                                                    }
+                                                                }
+                                                            },
+                                                        contentAlignment = Alignment.Center
+                                                    ) {
+                                                        Text(
+                                                            if (playing) "\u25A0" else "\u25B6",
+                                                            color = MaterialTheme.colorScheme.onPrimary,
+                                                            fontSize = 12.sp
+                                                        )
+                                                    }
+                                                    Spacer(modifier = Modifier.width(8.dp))
+                                                }
+
+                                                Text(
+                                                    word.question,
+                                                    fontSize = 15.sp,
+                                                    modifier = Modifier.weight(1f),
+                                                    maxLines = 1,
+                                                    overflow = TextOverflow.Ellipsis
+                                                )
+                                                Text(
+                                                    word.answer,
+                                                    fontSize = 15.sp,
+                                                    color = MaterialTheme.colorScheme.primary,
+                                                    modifier = Modifier.weight(1f),
+                                                    maxLines = 1,
+                                                    overflow = TextOverflow.Ellipsis,
+                                                    textAlign = androidx.compose.ui.text.style.TextAlign.End
+                                                )
+                                            }
+                                            if (word.reading.isNotBlank()) {
+                                                Text(
+                                                    word.reading,
+                                                    fontSize = 12.sp,
+                                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                                                )
+                                            }
                                         }
                                         if (index < previewWords.lastIndex) {
                                             Divider(
