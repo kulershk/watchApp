@@ -157,15 +157,34 @@ fun PackListScreen(
 
                             Spacer(modifier = Modifier.height(8.dp))
 
-                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
                                 FilledTonalButton(
-                                    onClick = { onEditPack(pack.token) },
+                                    onClick = {
+                                        if (isLocal) {
+                                            onEditPack(pack.token)
+                                        } else {
+                                            Toast.makeText(context, "Download the pack first to edit", Toast.LENGTH_SHORT).show()
+                                        }
+                                    },
+                                    enabled = isLocal,
                                     shape = RoundedCornerShape(8.dp)
                                 ) { Text("Edit") }
 
                                 if (pack.token in localTokens) {
-                                    OutlinedButton(onClick = {}, enabled = false, shape = RoundedCornerShape(8.dp)) {
-                                        Text("Downloaded")
+                                    OutlinedButton(
+                                        onClick = {
+                                            WordStorage.deletePack(context, pack.token)
+                                            localPacks = WordStorage.loadAllPacks(context)
+                                            localTokens = localPacks.map { it.token }.toSet()
+                                            Toast.makeText(context, "Uninstalled from phone", Toast.LENGTH_SHORT).show()
+                                        },
+                                        shape = RoundedCornerShape(8.dp)
+                                    ) {
+                                        Text("Uninstall")
                                     }
                                 } else if (pack.token in downloadingTokens) {
                                     OutlinedButton(onClick = {}, enabled = false, shape = RoundedCornerShape(8.dp)) {

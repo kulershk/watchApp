@@ -274,7 +274,7 @@ fun HomeScreen(
                                 color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
                             )
                         }
-                        FilledTonalButton(
+                        Button(
                             onClick = {
                                 try {
                                     val intent = android.content.Intent(
@@ -290,7 +290,10 @@ fun HomeScreen(
                                     context.startActivity(intent)
                                 }
                             },
-                            shape = RoundedCornerShape(8.dp)
+                            shape = RoundedCornerShape(8.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.primary
+                            )
                         ) {
                             Text("Update", fontSize = 13.sp)
                         }

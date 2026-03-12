@@ -24,7 +24,8 @@
       "Bash(\"/c/Program Files/Android/Android Studio/jbr/bin/keytool.exe\" -list -v -keystore /c/Users/kuler/.android/debug.keystore -alias androiddebugkey -storepass android 2>&1 | grep SHA1)",
       "Bash(grep -r \"preview\\\\|Preview\\\\|word_count\\\\|download_count\" /c/Users/kuler/Desktop/Stuff/watch/app/src/main/java/com/kana/watch --include=\"*.kt\" 2>/dev/null | head -20)",
       "Bash(ls C:/Users/kuler/Desktop/Stuff/watch/gradlew*)",
-      "Bash(ls C:/Users/kuler/Desktop/Stuff/watch/*.bat C:/Users/kuler/Desktop/Stuff/watch/*.gradle* 2>/dev/null | head -10)"
+      "Bash(ls C:/Users/kuler/Desktop/Stuff/watch/*.bat C:/Users/kuler/Desktop/Stuff/watch/*.gradle* 2>/dev/null | head -10)",
+      "Bash(ls C:/Users/kuler/Desktop/Stuff/watch/phone/src/main/res/drawable*/ 2>/dev/null; ls C:/Users/kuler/Desktop/Stuff/watch/phone/src/main/res/mipmap*/ 2>/dev/null)"
     ]
   }
 }
