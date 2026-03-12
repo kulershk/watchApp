@@ -619,7 +619,7 @@ fun PackEditorScreen(
                                 Toast.makeText(context, "Pack name required", Toast.LENGTH_SHORT).show()
                                 return@Button
                             }
-                            val validWords = words.filter { it.question.isNotBlank() && it.answer.isNotBlank() }
+                            val validWords = words.filter { (it.question.isNotBlank() || it.image.isNotBlank()) && it.answer.isNotBlank() }
                             if (validWords.isEmpty()) {
                                 Toast.makeText(context, "Add at least one word", Toast.LENGTH_SHORT).show()
                                 return@Button
