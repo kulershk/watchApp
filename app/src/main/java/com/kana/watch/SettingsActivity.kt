@@ -334,6 +334,22 @@ fun SettingsScreen(
                     modifier = Modifier.fillMaxWidth(0.85f)
                 )
             }
+
+            item {
+                val context = androidx.compose.ui.platform.LocalContext.current
+                val versionName = remember {
+                    try {
+                        context.packageManager.getPackageInfo(context.packageName, 0).versionName
+                    } catch (_: Exception) { "?" }
+                }
+                Spacer(modifier = Modifier.height(12.dp))
+                Text(
+                    "Version $versionName",
+                    fontSize = 10.sp,
+                    color = MaterialTheme.colors.onSurface.copy(alpha = 0.3f),
+                    textAlign = TextAlign.Center
+                )
+            }
         }
     }
 }
