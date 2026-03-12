@@ -12,7 +12,6 @@ object PackUpdater {
         val packs = WordStorage.loadAllPacks(context)
         if (packs.isEmpty()) return
 
-        val baseUrl = AppSettings.getBaseUrl(context)
         val authToken = AppSettings.getAuthToken(context)
 
         CoroutineScope(Dispatchers.IO).launch {
@@ -20,7 +19,7 @@ object PackUpdater {
 
             for (pack in packs) {
                 try {
-                    val connection = URL("$baseUrl${pack.token}").openConnection() as HttpURLConnection
+                    val connection = URL("https://watch.osrs.lv/api/words/${pack.id}").openConnection() as HttpURLConnection
                     connection.requestMethod = "GET"
                     connection.connectTimeout = 10000
                     connection.readTimeout = 10000
@@ -34,7 +33,7 @@ object PackUpdater {
                         val remoteUpdated = jsonObj.optString("updated_at", "")
 
                         if (remoteUpdated.isNotBlank() && remoteUpdated != pack.updated) {
-                            val name = jsonObj.optString("name", "Pack ${pack.token}")
+                            val name = jsonObj.optString("name", "Pack ${pack.id}")
                             val qLang = jsonObj.optString("question_lang", "")
                             val aLang = jsonObj.optString("answer_lang", "")
                             val author = jsonObj.optString("author", "")
@@ -56,7 +55,7 @@ object PackUpdater {
                             }
 
                             val updated = WordPack(
-                                token = pack.token,
+                                id = pack.id,
                                 name = name,
                                 updated = remoteUpdated,
                                 words = words,
@@ -82,13 +81,12 @@ object PackUpdater {
         }
     }
 
-    fun downloadPack(context: Context, token: String, onResult: (Boolean, String) -> Unit) {
-        val baseUrl = AppSettings.getBaseUrl(context)
+    fun downloadPack(context: Context, id: String, onResult: (Boolean, String) -> Unit) {
         val authToken = AppSettings.getAuthToken(context)
 
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                val connection = URL("$baseUrl$token").openConnection() as HttpURLConnection
+                val connection = URL("https://watch.osrs.lv/api/words/$id").openConnection() as HttpURLConnection
                 connection.requestMethod = "GET"
                 connection.connectTimeout = 10000
                 connection.readTimeout = 10000
@@ -100,7 +98,7 @@ object PackUpdater {
                     val json = connection.inputStream.bufferedReader().readText()
                     val jsonObj = JSONObject(json)
 
-                    val name = jsonObj.optString("name", "Pack $token")
+                    val name = jsonObj.optString("name", "Pack $id")
                     val updated = jsonObj.optString("updated_at", "")
                     val qLang = jsonObj.optString("question_lang", "")
                     val aLang = jsonObj.optString("answer_lang", "")
@@ -122,13 +120,13 @@ object PackUpdater {
                         )
                     }
 
-                    val pack = WordPack(token = token, name = name, updated = updated, words = words, questionLang = qLang, answerLang = aLang, author = author, downloadCount = dlCount)
+                    val pack = WordPack(id = id, name = name, updated = updated, words = words, questionLang = qLang, answerLang = aLang, author = author, downloadCount = dlCount)
                     WordStorage.savePack(context, pack)
                     AudioCache.downloadPackAudio(context, words)
                     ImageCache.downloadPackImages(context, words)
 
                     val enabled = AppSettings.getEnabledPacks(context).toMutableSet()
-                    enabled.add(token)
+                    enabled.add(id)
                     AppSettings.setEnabledPacks(context, enabled)
 
                     withContext(Dispatchers.Main) {
@@ -136,7 +134,7 @@ object PackUpdater {
                     }
                 } else {
                     withContext(Dispatchers.Main) {
-                        onResult(false, "Invalid token or server error")
+                        onResult(false, "Invalid pack or server error")
                     }
                 }
             } catch (e: Exception) {
@@ -164,8 +162,8 @@ object PackUpdater {
                     val json = connection.inputStream.bufferedReader().readText()
                     val jsonObj = JSONObject(json)
 
-                    val token = jsonObj.getString("token")
-                    val name = jsonObj.optString("name", "Pack $token")
+                    val id = jsonObj.getInt("id").toString()
+                    val name = jsonObj.optString("name", "Pack $id")
                     val updated = jsonObj.optString("updated_at", "")
                     val qLang = jsonObj.optString("question_lang", "")
                     val aLang = jsonObj.optString("answer_lang", "")
@@ -187,13 +185,13 @@ object PackUpdater {
                         )
                     }
 
-                    val pack = WordPack(token = token, name = name, updated = updated, words = words, questionLang = qLang, answerLang = aLang, author = author, downloadCount = dlCount)
+                    val pack = WordPack(id = id, name = name, updated = updated, words = words, questionLang = qLang, answerLang = aLang, author = author, downloadCount = dlCount)
                     WordStorage.savePack(context, pack)
                     AudioCache.downloadPackAudio(context, words)
                     ImageCache.downloadPackImages(context, words)
 
                     val enabled = AppSettings.getEnabledPacks(context).toMutableSet()
-                    enabled.add(token)
+                    enabled.add(id)
                     AppSettings.setEnabledPacks(context, enabled)
 
                     withContext(Dispatchers.Main) {
@@ -210,13 +208,12 @@ object PackUpdater {
         }
     }
 
-    fun updatePack(context: Context, token: String, onResult: (Boolean, String) -> Unit) {
-        val baseUrl = AppSettings.getBaseUrl(context)
+    fun updatePack(context: Context, id: String, onResult: (Boolean, String) -> Unit) {
         val authToken = AppSettings.getAuthToken(context)
 
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                val connection = URL("$baseUrl$token").openConnection() as HttpURLConnection
+                val connection = URL("https://watch.osrs.lv/api/words/$id").openConnection() as HttpURLConnection
                 connection.requestMethod = "GET"
                 connection.connectTimeout = 10000
                 connection.readTimeout = 10000
@@ -228,7 +225,7 @@ object PackUpdater {
                     val json = connection.inputStream.bufferedReader().readText()
                     val jsonObj = JSONObject(json)
 
-                    val name = jsonObj.optString("name", "Pack $token")
+                    val name = jsonObj.optString("name", "Pack $id")
                     val updated = jsonObj.optString("updated_at", "")
                     val qLang = jsonObj.optString("question_lang", "")
                     val aLang = jsonObj.optString("answer_lang", "")
@@ -250,7 +247,7 @@ object PackUpdater {
                         )
                     }
 
-                    val pack = WordPack(token = token, name = name, updated = updated, words = words, questionLang = qLang, answerLang = aLang, author = author, downloadCount = dlCount)
+                    val pack = WordPack(id = id, name = name, updated = updated, words = words, questionLang = qLang, answerLang = aLang, author = author, downloadCount = dlCount)
                     WordStorage.savePack(context, pack)
                     AudioCache.downloadPackAudio(context, words)
                     ImageCache.downloadPackImages(context, words)

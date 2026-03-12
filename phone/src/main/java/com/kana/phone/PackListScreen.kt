@@ -22,16 +22,15 @@ fun PackListScreen(
     onBack: () -> Unit,
     onCreatePack: () -> Unit,
     onEditPack: (String) -> Unit,
-    onDownloadPack: (String) -> Unit,
     context: android.content.Context
 ) {
     var packs by remember { mutableStateOf<List<RemotePack>>(emptyList()) }
     var loading by remember { mutableStateOf(true) }
     var localPacks by remember { mutableStateOf(WordStorage.loadAllPacks(context)) }
-    var localTokens by remember { mutableStateOf(localPacks.map { it.token }.toSet()) }
-    var downloadingTokens by remember { mutableStateOf(setOf<String>()) }
+    var localIds by remember { mutableStateOf(localPacks.map { it.id }.toSet()) }
+    var downloadingIds by remember { mutableStateOf(setOf<String>()) }
 
-    var syncingTokens by remember { mutableStateOf(setOf<String>()) }
+    var syncingIds by remember { mutableStateOf(setOf<String>()) }
 
     LaunchedEffect(Unit) {
         ApiClient.fetchPackList(context) { success, result ->
@@ -41,13 +40,13 @@ fun PackListScreen(
             // Auto-sync out-of-date local packs
             if (success) {
                 for (remotePack in result) {
-                    val localPack = localPacks.find { it.token == remotePack.token }
+                    val localPack = localPacks.find { it.id == remotePack.id }
                     if (localPack != null && localPack.updated != remotePack.updatedAt) {
-                        syncingTokens = syncingTokens + remotePack.token
-                        PackUpdater.updatePack(context, remotePack.token) { _, _ ->
-                            syncingTokens = syncingTokens - remotePack.token
+                        syncingIds = syncingIds + remotePack.id
+                        PackUpdater.updatePack(context, remotePack.id) { _, _ ->
+                            syncingIds = syncingIds - remotePack.id
                             localPacks = WordStorage.loadAllPacks(context)
-                            localTokens = localPacks.map { it.token }.toSet()
+                            localIds = localPacks.map { it.id }.toSet()
                         }
                     }
                 }
@@ -56,8 +55,8 @@ fun PackListScreen(
     }
 
     // Local-only packs (downloaded from others, not in user's remote packs)
-    val remoteTokens = packs.map { it.token }.toSet()
-    val downloadedOnly = localPacks.filter { it.token !in remoteTokens }
+    val remoteIds = packs.map { it.id }.toSet()
+    val downloadedOnly = localPacks.filter { it.id !in remoteIds }
 
     Scaffold(
         topBar = {
@@ -112,9 +111,9 @@ fun PackListScreen(
                 verticalArrangement = Arrangement.spacedBy(8.dp),
                 contentPadding = PaddingValues(vertical = 8.dp)
             ) {
-                items(packs, key = { it.token }) { pack ->
-                    val isLocal = pack.token in localTokens
-                    val isSyncing = pack.token in syncingTokens
+                items(packs, key = { it.id }) { pack ->
+                    val isLocal = pack.id in localIds
+                    val isSyncing = pack.id in syncingIds
 
                     Card(
                         modifier = Modifier.fillMaxWidth(),
@@ -204,7 +203,7 @@ fun PackListScreen(
                                     FilledTonalButton(
                                         onClick = {
                                             if (isLocal) {
-                                                onEditPack(pack.token)
+                                                onEditPack(pack.id)
                                             } else {
                                                 Toast.makeText(context, "Download the pack first to edit", Toast.LENGTH_SHORT).show()
                                             }
@@ -217,7 +216,7 @@ fun PackListScreen(
                                     IconButton(
                                         onClick = {
                                             sharing = true
-                                            ApiClient.generateShareCode(pack.token, context) { success, code ->
+                                            ApiClient.generateShareCode(pack.id, context) { success, code ->
                                                 sharing = false
                                                 if (success) {
                                                     val packName = pack.name.ifBlank { "Unnamed" }
@@ -238,30 +237,30 @@ fun PackListScreen(
                                     }
                                 }
 
-                                if (pack.token in localTokens) {
+                                if (pack.id in localIds) {
                                     OutlinedButton(
                                         onClick = {
-                                            WordStorage.deletePack(context, pack.token)
+                                            WordStorage.deletePack(context, pack.id)
                                             localPacks = WordStorage.loadAllPacks(context)
-                                            localTokens = localPacks.map { it.token }.toSet()
+                                            localIds = localPacks.map { it.id }.toSet()
                                             Toast.makeText(context, "Uninstalled from phone", Toast.LENGTH_SHORT).show()
                                         },
                                         shape = RoundedCornerShape(8.dp)
                                     ) {
                                         Text("Uninstall")
                                     }
-                                } else if (pack.token in downloadingTokens) {
+                                } else if (pack.id in downloadingIds) {
                                     OutlinedButton(onClick = {}, enabled = false, shape = RoundedCornerShape(8.dp)) {
                                         Text("Downloading...")
                                     }
                                 } else {
                                     Button(
                                         onClick = {
-                                            downloadingTokens = downloadingTokens + pack.token
-                                            PackUpdater.downloadPack(context, pack.token) { success, message ->
-                                                downloadingTokens = downloadingTokens - pack.token
+                                            downloadingIds = downloadingIds + pack.id
+                                            PackUpdater.downloadPack(context, pack.id) { success, message ->
+                                                downloadingIds = downloadingIds - pack.id
                                                 if (success) {
-                                                    localTokens = localTokens + pack.token
+                                                    localIds = localIds + pack.id
                                                 }
                                                 Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
                                             }
@@ -288,7 +287,7 @@ fun PackListScreen(
                         )
                     }
 
-                    items(downloadedOnly, key = { "local_${it.token}" }) { pack ->
+                    items(downloadedOnly, key = { "local_${it.id}" }) { pack ->
                         Card(
                             modifier = Modifier.fillMaxWidth(),
                             colors = CardDefaults.cardColors(
@@ -331,9 +330,9 @@ fun PackListScreen(
                                 ) {
                                     Button(
                                         onClick = {
-                                            WordStorage.deletePack(context, pack.token)
+                                            WordStorage.deletePack(context, pack.id)
                                             localPacks = WordStorage.loadAllPacks(context)
-                                            localTokens = localPacks.map { it.token }.toSet()
+                                            localIds = localPacks.map { it.id }.toSet()
                                         },
                                         colors = ButtonDefaults.buttonColors(
                                             containerColor = MaterialTheme.colorScheme.error

@@ -13,7 +13,7 @@ data class Word(
 )
 
 data class WordPack(
-    val token: String,
+    val id: String,
     val name: String,
     val updated: String,
     val words: List<Word>,
@@ -30,12 +30,12 @@ object WordStorage {
 
     fun savePack(context: Context, pack: WordPack) {
         val existing = loadAllPacks(context).toMutableList()
-        val oldPack = existing.find { it.token == pack.token }
+        val oldPack = existing.find { it.id == pack.id }
         if (oldPack != null) {
             AudioCache.cleanOldAudio(context, oldPack.words, pack.words)
             ImageCache.cleanOldImages(context, oldPack.words, pack.words)
         }
-        existing.removeAll { it.token == pack.token }
+        existing.removeAll { it.id == pack.id }
         existing.add(pack)
         saveAll(context, existing)
     }
@@ -67,8 +67,8 @@ object WordStorage {
 
             packs.add(
                 WordPack(
-                    token = packObj.getString("token"),
-                    name = packObj.optString("name", "Pack ${packObj.getString("token")}"),
+                    id = packObj.getString("id"),
+                    name = packObj.optString("name", "Pack ${packObj.getString("id")}"),
                     updated = packObj.optString("updated", ""),
                     words = words,
                     questionLang = packObj.optString("question_lang", ""),
@@ -83,24 +83,24 @@ object WordStorage {
     }
 
     fun getEnabledWords(context: Context): List<Word> {
-        val enabledTokens = AppSettings.getEnabledPacks(context)
+        val enabledIds = AppSettings.getEnabledPacks(context)
         return loadAllPacks(context)
-            .filter { it.token in enabledTokens }
+            .filter { it.id in enabledIds }
             .flatMap { it.words }
     }
 
-    fun deletePack(context: Context, token: String) {
+    fun deletePack(context: Context, id: String) {
         val packs = loadAllPacks(context).toMutableList()
-        val pack = packs.find { it.token == token }
+        val pack = packs.find { it.id == id }
         if (pack != null) {
             AudioCache.deletePackAudio(context, pack.words)
             ImageCache.deletePackImages(context, pack.words)
         }
-        packs.removeAll { it.token == token }
+        packs.removeAll { it.id == id }
         saveAll(context, packs)
 
         val enabled = AppSettings.getEnabledPacks(context).toMutableSet()
-        enabled.remove(token)
+        enabled.remove(id)
         AppSettings.setEnabledPacks(context, enabled)
     }
 
@@ -110,7 +110,7 @@ object WordStorage {
 
         for (p in packs) {
             val packObj = JSONObject()
-            packObj.put("token", p.token)
+            packObj.put("id", p.id)
             packObj.put("name", p.name)
             packObj.put("updated", p.updated)
 

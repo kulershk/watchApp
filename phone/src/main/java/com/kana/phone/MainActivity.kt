@@ -93,7 +93,7 @@ fun AppContent(context: android.content.Context, initialQuiz: QuizItem?) {
     }
     var currentScreen by remember { mutableStateOf(startScreen) }
     var quizItem by remember { mutableStateOf(initialQuiz) }
-    var editToken by remember { mutableStateOf<String?>(null) }
+    var editId by remember { mutableStateOf<String?>(null) }
     var syncMessage by remember { mutableStateOf<String?>(null) }
     var updateAvailable by remember { mutableStateOf<String?>(null) }
 
@@ -176,17 +176,12 @@ fun AppContent(context: android.content.Context, initialQuiz: QuizItem?) {
         Screen.PACK_LIST -> PackListScreen(
             onBack = { currentScreen = Screen.HOME },
             onCreatePack = {
-                editToken = null
+                editId = null
                 currentScreen = Screen.PACK_EDITOR
             },
-            onEditPack = { token ->
-                editToken = token
+            onEditPack = { id ->
+                editId = id
                 currentScreen = Screen.PACK_EDITOR
-            },
-            onDownloadPack = { token ->
-                PackUpdater.downloadPack(context, token) { _, message ->
-                    Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
-                }
             },
             context = context
         )
@@ -195,7 +190,7 @@ fun AppContent(context: android.content.Context, initialQuiz: QuizItem?) {
             context = context
         )
         Screen.PACK_EDITOR -> PackEditorScreen(
-            editToken = editToken,
+            editId = editId,
             onBack = { currentScreen = Screen.PACK_LIST },
             context = context
         )
@@ -678,8 +673,8 @@ fun SettingsScreen(onBack: () -> Unit, onLogout: () -> Unit, context: android.co
                     )
                 }
 
-                items(packs, key = { it.token }) { pack ->
-                    val isEnabled = pack.token in enabledPacks
+                items(packs, key = { it.id }) { pack ->
+                    val isEnabled = pack.id in enabledPacks
 
                     Card(
                         modifier = Modifier.fillMaxWidth(),
@@ -705,7 +700,7 @@ fun SettingsScreen(onBack: () -> Unit, onLogout: () -> Unit, context: android.co
                                     checked = isEnabled,
                                     onCheckedChange = { checked ->
                                         val current = enabledPacks.toMutableSet()
-                                        if (checked) current.add(pack.token) else current.remove(pack.token)
+                                        if (checked) current.add(pack.id) else current.remove(pack.id)
                                         AppSettings.setEnabledPacks(context, current)
                                         enabledPacks = current
                                     }
@@ -718,7 +713,7 @@ fun SettingsScreen(onBack: () -> Unit, onLogout: () -> Unit, context: android.co
                                 FilledTonalButton(
                                     shape = RoundedCornerShape(8.dp),
                                     onClick = {
-                                        PackUpdater.updatePack(context, pack.token) { _, message ->
+                                        PackUpdater.updatePack(context, pack.id) { _, message ->
                                             Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
                                             packs = WordStorage.loadAllPacks(context)
                                         }
@@ -727,7 +722,7 @@ fun SettingsScreen(onBack: () -> Unit, onLogout: () -> Unit, context: android.co
 
                                 Button(
                                     onClick = {
-                                        WordStorage.deletePack(context, pack.token)
+                                        WordStorage.deletePack(context, pack.id)
 
                                         packs = WordStorage.loadAllPacks(context)
                                         enabledPacks = AppSettings.getEnabledPacks(context)

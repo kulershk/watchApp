@@ -44,8 +44,8 @@ fun BrowsePacksScreen(
     var selectedTag by remember { mutableStateOf("") }
     var filterQuestionLang by remember { mutableStateOf("") }
     var filterAnswerLang by remember { mutableStateOf("") }
-    var localTokens by remember { mutableStateOf(WordStorage.loadAllPacks(context).map { it.token }.toSet()) }
-    var downloadingTokens by remember { mutableStateOf(setOf<String>()) }
+    var localIds by remember { mutableStateOf(WordStorage.loadAllPacks(context).map { it.id }.toSet()) }
+    var downloadingIds by remember { mutableStateOf(setOf<String>()) }
     var previewPack by remember { mutableStateOf<RemotePack?>(null) }
     var previewWords by remember { mutableStateOf<List<Word>>(emptyList()) }
     var previewLoading by remember { mutableStateOf(false) }
@@ -234,14 +234,14 @@ fun BrowsePacksScreen(
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                     contentPadding = PaddingValues(vertical = 8.dp)
                 ) {
-                    items(packs, key = { it.token }) { pack ->
-                        val isDownloaded = pack.token in localTokens
+                    items(packs, key = { it.id }) { pack ->
+                        val isDownloaded = pack.id in localIds
                         Card(
                             modifier = Modifier.fillMaxWidth().clickable {
                                 previewPack = pack
                                 previewLoading = true
                                 previewWords = emptyList()
-                                ApiClient.fetchPackPreview(pack.token) { success, words ->
+                                ApiClient.fetchPackPreview(pack.id) { success, words ->
                                     previewLoading = false
                                     if (success) previewWords = words
                                 }
@@ -337,18 +337,18 @@ fun BrowsePacksScreen(
                                             OutlinedButton(onClick = {}, enabled = false, shape = RoundedCornerShape(8.dp)) {
                                                 Text("Downloaded")
                                             }
-                                        } else if (pack.token in downloadingTokens) {
+                                        } else if (pack.id in downloadingIds) {
                                             OutlinedButton(onClick = {}, enabled = false, shape = RoundedCornerShape(8.dp)) {
                                                 Text("Downloading...")
                                             }
                                         } else {
                                             Button(
                                                 onClick = {
-                                                    downloadingTokens = downloadingTokens + pack.token
-                                                    PackUpdater.downloadPack(context, pack.token) { success, message ->
-                                                        downloadingTokens = downloadingTokens - pack.token
+                                                    downloadingIds = downloadingIds + pack.id
+                                                    PackUpdater.downloadPack(context, pack.id) { success, message ->
+                                                        downloadingIds = downloadingIds - pack.id
                                                         if (success) {
-                                                            localTokens = localTokens + pack.token
+                                                            localIds = localIds + pack.id
                                                         }
                                                         android.widget.Toast.makeText(context, message, android.widget.Toast.LENGTH_SHORT).show()
                                                     }
@@ -387,7 +387,7 @@ fun BrowsePacksScreen(
                                                             Toast.makeText(context, "Login to rate packs", Toast.LENGTH_SHORT).show()
                                                             return@clickable
                                                         }
-                                                        ApiClient.ratePack(pack.token, star, context) { success, newAvg, newCount ->
+                                                        ApiClient.ratePack(pack.id, star, context) { success, newAvg, newCount ->
                                                             if (success) {
                                                                 userRating = star
                                                                 packAvg = newAvg

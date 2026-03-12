@@ -47,11 +47,11 @@ object AppSettings {
         return prefs.getStringSet(KEY_ENABLED_PACKS, emptySet()) ?: emptySet()
     }
 
-    fun setEnabledPacks(context: Context, tokens: Set<String>) {
+    fun setEnabledPacks(context: Context, ids: Set<String>) {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        prefs.edit().putStringSet(KEY_ENABLED_PACKS, tokens).apply()
+        prefs.edit().putStringSet(KEY_ENABLED_PACKS, ids).apply()
         if (isLoggedIn(context)) {
-            ApiClient.pushWatchSyncPacks(context, tokens)
+            ApiClient.pushWatchSyncPacks(context, ids)
         }
     }
 

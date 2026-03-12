@@ -77,14 +77,14 @@ class MainActivity : ComponentActivity() {
                     val jsonObj = JSONObject(json)
                     val packsArray = jsonObj.getJSONArray("packs")
 
-                    val remoteTokens = mutableSetOf<String>()
+                    val remoteIds = mutableSetOf<String>()
 
                     for (i in 0 until packsArray.length()) {
                         val packObj = packsArray.getJSONObject(i)
-                        val token = packObj.getString("token")
-                        remoteTokens.add(token)
+                        val id = packObj.getInt("id").toString()
+                        remoteIds.add(id)
 
-                        val name = packObj.optString("name", "Pack $token")
+                        val name = packObj.optString("name", "Pack $id")
                         val updatedAt = packObj.optString("updated_at", "")
                         val qLang = packObj.optString("question_lang", "")
                         val aLang = packObj.optString("answer_lang", "")
@@ -108,10 +108,10 @@ class MainActivity : ComponentActivity() {
 
                         // Check if pack needs updating
                         val localPacks = WordStorage.loadAllPacks(this@MainActivity)
-                        val localPack = localPacks.find { it.token == token }
+                        val localPack = localPacks.find { it.id == id }
 
                         if (localPack == null || localPack.updated != updatedAt) {
-                            val pack = WordPack(token = token, name = name, updated = updatedAt, words = words, questionLang = qLang, answerLang = aLang, author = author, downloadCount = dlCount)
+                            val pack = WordPack(id = id, name = name, updated = updatedAt, words = words, questionLang = qLang, answerLang = aLang, author = author, downloadCount = dlCount)
                             WordStorage.savePack(this@MainActivity, pack)
                             AudioCache.downloadPackAudio(this@MainActivity, words)
                             ImageCache.downloadPackImages(this@MainActivity, words)
@@ -119,20 +119,20 @@ class MainActivity : ComponentActivity() {
                             // Auto-enable new packs
                             if (localPack == null) {
                                 val enabled = AppSettings.getEnabledPacks(this@MainActivity).toMutableSet()
-                                enabled.add(token)
+                                enabled.add(id)
                                 AppSettings.setEnabledPacks(this@MainActivity, enabled)
                             }
 
-                            Log.d(TAG, "Synced pack '$name' ($token) with ${words.size} words")
+                            Log.d(TAG, "Synced pack '$name' ($id) with ${words.size} words")
                         }
                     }
 
                     // Remove packs that no longer exist on server
                     val localPacks = WordStorage.loadAllPacks(this@MainActivity)
                     for (localPack in localPacks) {
-                        if (localPack.token !in remoteTokens) {
-                            Log.d(TAG, "Removing deleted pack: ${localPack.name} (${localPack.token})")
-                            WordStorage.deletePack(this@MainActivity, localPack.token)
+                        if (localPack.id !in remoteIds) {
+                            Log.d(TAG, "Removing deleted pack: ${localPack.name} (${localPack.id})")
+                            WordStorage.deletePack(this@MainActivity, localPack.id)
                         }
                     }
 

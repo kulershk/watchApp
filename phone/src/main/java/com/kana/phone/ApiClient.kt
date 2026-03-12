@@ -11,7 +11,7 @@ import java.net.HttpURLConnection
 import java.net.URL
 
 data class RemotePack(
-    val token: String,
+    val id: String,
     val name: String,
     val wordCount: Int,
     val updatedAt: String,
@@ -42,7 +42,7 @@ data class EditWord(
 )
 
 data class EditPack(
-    val token: String,
+    val id: String,
     val name: String,
     val words: List<EditWord>,
     val isPublic: Boolean = false,
@@ -257,7 +257,7 @@ object ApiClient {
         }
     }
 
-    fun pushWatchSyncPacks(context: Context, tokens: Set<String>) {
+    fun pushWatchSyncPacks(context: Context, ids: Set<String>) {
         CoroutineScope(Dispatchers.IO).launch {
             try {
                 val connection = URL("$BASE/watch/sync-packs").openConnection() as HttpURLConnection
@@ -269,7 +269,7 @@ object ApiClient {
                 addAuth(connection, context)
 
                 val body = JSONObject()
-                body.put("tokens", JSONArray(tokens.toList()))
+                body.put("ids", JSONArray(ids.toList()))
                 OutputStreamWriter(connection.outputStream).use { it.write(body.toString()) }
 
                 connection.responseCode // fire and forget
@@ -297,7 +297,7 @@ object ApiClient {
                         val obj = arr.getJSONObject(i)
                         packs.add(
                             RemotePack(
-                                token = obj.getString("token"),
+                                id = obj.getInt("id").toString(),
                                 name = obj.optString("name", ""),
                                 wordCount = obj.optInt("word_count", 0),
                                 updatedAt = obj.optString("updated_at", ""),
@@ -345,7 +345,7 @@ object ApiClient {
                         val obj = arr.getJSONObject(i)
                         packs.add(
                             RemotePack(
-                                token = obj.getString("token"),
+                                id = obj.getInt("id").toString(),
                                 name = obj.optString("name", ""),
                                 wordCount = obj.optInt("word_count", 0),
                                 updatedAt = obj.optString("updated_at", ""),
@@ -370,10 +370,10 @@ object ApiClient {
         }
     }
 
-    fun generateShareCode(token: String, context: Context, onResult: (Boolean, String) -> Unit) {
+    fun generateShareCode(id: String, context: Context, onResult: (Boolean, String) -> Unit) {
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                val connection = URL("$BASE/packs/$token/share").openConnection() as HttpURLConnection
+                val connection = URL("$BASE/packs/$id/share").openConnection() as HttpURLConnection
                 connection.requestMethod = "POST"
                 connection.setRequestProperty("Content-Type", "application/json")
                 connection.doOutput = true
@@ -395,10 +395,10 @@ object ApiClient {
         }
     }
 
-    fun fetchPackPreview(token: String, onResult: (Boolean, List<Word>) -> Unit) {
+    fun fetchPackPreview(id: String, onResult: (Boolean, List<Word>) -> Unit) {
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                val connection = URL("$BASE/words/$token").openConnection() as HttpURLConnection
+                val connection = URL("$BASE/words/$id").openConnection() as HttpURLConnection
                 connection.requestMethod = "GET"
                 connection.connectTimeout = 10000
                 connection.readTimeout = 10000
@@ -432,10 +432,10 @@ object ApiClient {
         }
     }
 
-    fun fetchPackForEdit(token: String, context: Context, onResult: (Boolean, EditPack?) -> Unit) {
+    fun fetchPackForEdit(id: String, context: Context, onResult: (Boolean, EditPack?) -> Unit) {
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                val connection = URL("$BASE/packs/$token/edit").openConnection() as HttpURLConnection
+                val connection = URL("$BASE/packs/$id/edit").openConnection() as HttpURLConnection
                 connection.requestMethod = "GET"
                 connection.connectTimeout = 10000
                 connection.readTimeout = 10000
@@ -468,7 +468,7 @@ object ApiClient {
                     val answerLang = obj.optString("answer_lang", "")
 
                     withContext(Dispatchers.Main) {
-                        onResult(true, EditPack(token, name, words, isPublic, packTags, questionLang, answerLang))
+                        onResult(true, EditPack(id, name, words, isPublic, packTags, questionLang, answerLang))
                     }
                 } else {
                     withContext(Dispatchers.Main) { onResult(false, null) }
@@ -515,8 +515,8 @@ object ApiClient {
                     connection.responseCode == HttpURLConnection.HTTP_CREATED) {
                     val json = connection.inputStream.bufferedReader().readText()
                     val obj = JSONObject(json)
-                    val token = obj.optString("token", "")
-                    withContext(Dispatchers.Main) { onResult(true, token) }
+                    val id = obj.getInt("id").toString()
+                    withContext(Dispatchers.Main) { onResult(true, id) }
                 } else {
                     withContext(Dispatchers.Main) { onResult(false, "Server error") }
                 }
@@ -526,10 +526,10 @@ object ApiClient {
         }
     }
 
-    fun savePack(token: String, name: String, words: List<EditWord>, context: Context, isPublic: Boolean = false, tags: String = "", questionLang: String = "", answerLang: String = "", onResult: (Boolean, String) -> Unit) {
+    fun savePack(id: String, name: String, words: List<EditWord>, context: Context, isPublic: Boolean = false, tags: String = "", questionLang: String = "", answerLang: String = "", onResult: (Boolean, String) -> Unit) {
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                val connection = URL("$BASE/packs/$token").openConnection() as HttpURLConnection
+                val connection = URL("$BASE/packs/$id").openConnection() as HttpURLConnection
                 connection.requestMethod = "PUT"
                 connection.setRequestProperty("Content-Type", "application/json")
                 connection.doOutput = true
@@ -676,10 +676,10 @@ object ApiClient {
         }
     }
 
-    fun deletePack(token: String, context: Context, onResult: (Boolean, String) -> Unit) {
+    fun deletePack(id: String, context: Context, onResult: (Boolean, String) -> Unit) {
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                val connection = URL("$BASE/packs/$token").openConnection() as HttpURLConnection
+                val connection = URL("$BASE/packs/$id").openConnection() as HttpURLConnection
                 connection.requestMethod = "DELETE"
                 connection.connectTimeout = 10000
                 connection.readTimeout = 10000
@@ -699,10 +699,10 @@ object ApiClient {
 
     // ============ RATINGS ============
 
-    fun ratePack(token: String, rating: Int, context: Context, onResult: (Boolean, Float, Int) -> Unit) {
+    fun ratePack(id: String, rating: Int, context: Context, onResult: (Boolean, Float, Int) -> Unit) {
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                val connection = URL("$BASE/packs/$token/rate").openConnection() as HttpURLConnection
+                val connection = URL("$BASE/packs/$id/rate").openConnection() as HttpURLConnection
                 connection.requestMethod = "POST"
                 connection.setRequestProperty("Content-Type", "application/json")
                 connection.doOutput = true
@@ -731,10 +731,10 @@ object ApiClient {
 
     // ============ COLLABORATORS ============
 
-    fun fetchCollaborators(token: String, context: Context, onResult: (Boolean, List<Collaborator>) -> Unit) {
+    fun fetchCollaborators(id: String, context: Context, onResult: (Boolean, List<Collaborator>) -> Unit) {
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                val connection = URL("$BASE/packs/$token/collaborators").openConnection() as HttpURLConnection
+                val connection = URL("$BASE/packs/$id/collaborators").openConnection() as HttpURLConnection
                 connection.requestMethod = "GET"
                 connection.connectTimeout = 10000
                 connection.readTimeout = 10000
@@ -762,10 +762,10 @@ object ApiClient {
         }
     }
 
-    fun addCollaborator(token: String, friendCode: String, context: Context, onResult: (Boolean, String) -> Unit) {
+    fun addCollaborator(id: String, friendCode: String, context: Context, onResult: (Boolean, String) -> Unit) {
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                val connection = URL("$BASE/packs/$token/collaborators").openConnection() as HttpURLConnection
+                val connection = URL("$BASE/packs/$id/collaborators").openConnection() as HttpURLConnection
                 connection.requestMethod = "POST"
                 connection.setRequestProperty("Content-Type", "application/json")
                 connection.doOutput = true
@@ -791,10 +791,10 @@ object ApiClient {
         }
     }
 
-    fun removeCollaborator(token: String, userId: Int, context: Context, onResult: (Boolean) -> Unit) {
+    fun removeCollaborator(id: String, userId: Int, context: Context, onResult: (Boolean) -> Unit) {
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                val connection = URL("$BASE/packs/$token/collaborators/$userId").openConnection() as HttpURLConnection
+                val connection = URL("$BASE/packs/$id/collaborators/$userId").openConnection() as HttpURLConnection
                 connection.requestMethod = "DELETE"
                 connection.connectTimeout = 10000
                 connection.readTimeout = 10000

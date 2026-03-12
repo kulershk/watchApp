@@ -25,7 +25,7 @@ import java.io.File
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PackEditorScreen(
-    editToken: String?,
+    editId: String?,
     onBack: () -> Unit,
     context: android.content.Context
 ) {
@@ -35,18 +35,18 @@ fun PackEditorScreen(
     var tags by remember { mutableStateOf("") }
     var questionLang by remember { mutableStateOf("") }
     var answerLang by remember { mutableStateOf("") }
-    var loading by remember { mutableStateOf(editToken != null) }
+    var loading by remember { mutableStateOf(editId != null) }
     var saving by remember { mutableStateOf(false) }
     var importText by remember { mutableStateOf("") }
     var showImport by remember { mutableStateOf(false) }
-    var savedToken by remember { mutableStateOf(editToken) }
+    var savedId by remember { mutableStateOf(editId) }
     var collaborators by remember { mutableStateOf<List<Collaborator>>(emptyList()) }
     var friendCodeInput by remember { mutableStateOf("") }
     var addingFriend by remember { mutableStateOf(false) }
 
-    LaunchedEffect(editToken) {
-        if (editToken != null) {
-            ApiClient.fetchPackForEdit(editToken, context) { success, pack ->
+    LaunchedEffect(editId) {
+        if (editId != null) {
+            ApiClient.fetchPackForEdit(editId, context) { success, pack ->
                 if (success && pack != null) {
                     packName = pack.name
                     isPublic = pack.isPublic
@@ -59,7 +59,7 @@ fun PackEditorScreen(
                 }
                 loading = false
             }
-            ApiClient.fetchCollaborators(editToken, context) { _, result ->
+            ApiClient.fetchCollaborators(editId, context) { _, result ->
                 collaborators = result
             }
         }
@@ -68,7 +68,7 @@ fun PackEditorScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(if (editToken != null) "Edit Pack" else "Create Pack") },
+                title = { Text(if (editId != null) "Edit Pack" else "Create Pack") },
                 navigationIcon = {
                     TextButton(onClick = onBack) {
                         Text("\u2190 Back", color = MaterialTheme.colorScheme.onSurface)
@@ -264,8 +264,8 @@ fun PackEditorScreen(
             }
 
             // Collaborators (only for saved packs)
-            val collabToken = savedToken
-            if (collabToken != null) {
+            val collabId = savedId
+            if (collabId != null) {
                 item {
                     Card(
                         modifier = Modifier.fillMaxWidth(),
@@ -309,7 +309,7 @@ fun PackEditorScreen(
                                         }
                                         Button(
                                             onClick = {
-                                                ApiClient.removeCollaborator(collabToken, collab.id, context) { success ->
+                                                ApiClient.removeCollaborator(collabId, collab.id, context) { success ->
                                                     if (success) {
                                                         collaborators = collaborators.filter { it.id != collab.id }
                                                     }
@@ -346,11 +346,11 @@ fun PackEditorScreen(
                                     onClick = {
                                         if (friendCodeInput.length == 6) {
                                             addingFriend = true
-                                            ApiClient.addCollaborator(collabToken, friendCodeInput, context) { success, message ->
+                                            ApiClient.addCollaborator(collabId, friendCodeInput, context) { success, message ->
                                                 addingFriend = false
                                                 if (success) {
                                                     friendCodeInput = ""
-                                                    ApiClient.fetchCollaborators(collabToken, context) { _, result ->
+                                                    ApiClient.fetchCollaborators(collabId, context) { _, result ->
                                                         collaborators = result
                                                     }
                                                 }
@@ -626,11 +626,11 @@ fun PackEditorScreen(
                             }
 
                             saving = true
-                            if (savedToken != null) {
-                                ApiClient.savePack(savedToken!!, packName, validWords, context, isPublic, tags, questionLang, answerLang) { success, msg ->
+                            if (savedId != null) {
+                                ApiClient.savePack(savedId!!, packName, validWords, context, isPublic, tags, questionLang, answerLang) { success, msg ->
                                     if (success) {
                                         // Re-download pack locally so quiz uses updated audio
-                                        PackUpdater.updatePack(context, savedToken!!) { _, _ -> }
+                                        PackUpdater.updatePack(context, savedId!!) { _, _ -> }
                                     }
                                     saving = false
                                     Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
@@ -639,10 +639,10 @@ fun PackEditorScreen(
                                 ApiClient.createPack(packName, validWords, context, isPublic, tags, questionLang, answerLang) { success, result ->
                                     saving = false
                                     if (success) {
-                                        savedToken = result
+                                        savedId = result
                                         // Download pack locally so quiz has the audio
                                         PackUpdater.downloadPack(context, result) { _, _ -> }
-                                        Toast.makeText(context, "Created! Token: $result", Toast.LENGTH_SHORT).show()
+                                        Toast.makeText(context, "Created!", Toast.LENGTH_SHORT).show()
                                     } else {
                                         Toast.makeText(context, result, Toast.LENGTH_SHORT).show()
                                     }
@@ -659,7 +659,7 @@ fun PackEditorScreen(
                         Text(
                             when {
                                 saving -> "Saving..."
-                                savedToken != null -> "Save"
+                                savedId != null -> "Save"
                                 else -> "Create"
                             },
                             fontSize = 16.sp,
@@ -667,10 +667,10 @@ fun PackEditorScreen(
                         )
                     }
 
-                    if (savedToken != null) {
+                    if (savedId != null) {
                         Button(
                             onClick = {
-                                ApiClient.deletePack(savedToken!!, context) { success, msg ->
+                                ApiClient.deletePack(savedId!!, context) { success, msg ->
                                     Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
                                     if (success) onBack()
                                 }

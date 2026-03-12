@@ -49,15 +49,15 @@ class SettingsActivity : ComponentActivity() {
                             NotificationScheduler.schedule(this, minutes)
                         }
                     },
-                    onTogglePack = { token, enabled ->
+                    onTogglePack = { id, enabled ->
                         val current = AppSettings.getEnabledPacks(this).toMutableSet()
-                        if (enabled) current.add(token) else current.remove(token)
+                        if (enabled) current.add(id) else current.remove(id)
                         AppSettings.setEnabledPacks(this, current)
                         refreshUI()
                     },
-                    onUpdatePack = { token -> updatePack(token) },
-                    onDeletePack = { token ->
-                        WordStorage.deletePack(this, token)
+                    onUpdatePack = { id -> updatePack(id) },
+                    onDeletePack = { id ->
+                        WordStorage.deletePack(this, id)
                         refreshUI()
                     },
                     onClose = { finish() },
@@ -71,9 +71,9 @@ class SettingsActivity : ComponentActivity() {
         }
     }
 
-    private fun updatePack(token: String) {
+    private fun updatePack(id: String) {
         val baseUrl = AppSettings.getBaseUrl(this)
-        val url = "$baseUrl$token"
+        val url = "$baseUrl$id"
 
         CoroutineScope(Dispatchers.IO).launch {
             try {
@@ -86,7 +86,7 @@ class SettingsActivity : ComponentActivity() {
                     val json = connection.inputStream.bufferedReader().readText()
                     val jsonObj = JSONObject(json)
 
-                    val name = jsonObj.optString("name", "Pack $token")
+                    val name = jsonObj.optString("name", "Pack $id")
                     val updated = jsonObj.optString("updated_at", "")
                     val qLang = jsonObj.optString("question_lang", "")
                     val aLang = jsonObj.optString("answer_lang", "")
@@ -108,7 +108,7 @@ class SettingsActivity : ComponentActivity() {
                     }
 
                     val pack = WordPack(
-                        token = token,
+                        id = id,
                         name = name,
                         updated = updated,
                         words = words,
@@ -273,13 +273,13 @@ fun SettingsScreen(
                 }
 
                 for (pack in packs) {
-                    val isEnabled = pack.token in enabledPacks
+                    val isEnabled = pack.id in enabledPacks
 
                     // Toggle on/off
                     item {
                         ToggleChip(
                             checked = isEnabled,
-                            onCheckedChange = { onTogglePack(pack.token, it) },
+                            onCheckedChange = { onTogglePack(pack.id, it) },
                             label = { Text(pack.name, fontSize = 12.sp) },
                             secondaryLabel = {
                                 Text(
@@ -301,7 +301,7 @@ fun SettingsScreen(
                             modifier = Modifier.fillMaxWidth(0.85f)
                         ) {
                             CompactChip(
-                                onClick = { onUpdatePack(pack.token) },
+                                onClick = { onUpdatePack(pack.id) },
                                 label = { Text("Update", fontSize = 11.sp) },
                                 colors = ChipDefaults.chipColors(
                                     backgroundColor = MaterialTheme.colors.secondary
@@ -309,7 +309,7 @@ fun SettingsScreen(
                                 modifier = Modifier.weight(1f)
                             )
                             CompactChip(
-                                onClick = { onDeletePack(pack.token) },
+                                onClick = { onDeletePack(pack.id) },
                                 label = { Text("Delete", fontSize = 11.sp) },
                                 colors = ChipDefaults.chipColors(
                                     backgroundColor = MaterialTheme.colors.error
