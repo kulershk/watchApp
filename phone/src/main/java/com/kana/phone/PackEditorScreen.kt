@@ -117,7 +117,7 @@ fun PackEditorScreen(
 
             // Language selectors
             item {
-                val languages = listOf("", "Japanese", "English", "Spanish", "French", "German", "Korean", "Chinese", "Russian", "Portuguese", "Italian", "Arabic", "Hindi", "Turkish", "Vietnamese", "Thai", "Indonesian", "Dutch", "Polish", "Swedish", "Other")
+                val languages = languageList
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     colors = CardDefaults.cardColors(

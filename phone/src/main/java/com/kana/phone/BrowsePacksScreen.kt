@@ -7,14 +7,17 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
@@ -30,6 +33,9 @@ fun BrowsePacksScreen(
     var filterAnswerLang by remember { mutableStateOf("") }
     var localTokens by remember { mutableStateOf(WordStorage.loadAllPacks(context).map { it.token }.toSet()) }
     var downloadingTokens by remember { mutableStateOf(setOf<String>()) }
+    var previewPack by remember { mutableStateOf<RemotePack?>(null) }
+    var previewWords by remember { mutableStateOf<List<Word>>(emptyList()) }
+    var previewLoading by remember { mutableStateOf(false) }
 
     fun loadPacks() {
         loading = true
@@ -109,7 +115,7 @@ fun BrowsePacksScreen(
                     .padding(horizontal = 16.dp, vertical = 4.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                val languages = listOf("", "Japanese", "English", "Spanish", "French", "German", "Korean", "Chinese", "Russian", "Portuguese", "Italian", "Arabic", "Hindi", "Turkish", "Vietnamese", "Thai", "Indonesian", "Dutch", "Polish", "Swedish", "Other")
+                val languages = languageList
 
                 var qExpanded by remember { mutableStateOf(false) }
                 ExposedDropdownMenuBox(
@@ -227,7 +233,15 @@ fun BrowsePacksScreen(
                     items(packs, key = { it.token }) { pack ->
                         val isDownloaded = pack.token in localTokens
                         Card(
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier.fillMaxWidth().clickable {
+                                previewPack = pack
+                                previewLoading = true
+                                previewWords = emptyList()
+                                ApiClient.fetchPackPreview(pack.token) { success, words ->
+                                    previewLoading = false
+                                    if (success) previewWords = words
+                                }
+                            },
                             colors = CardDefaults.cardColors(
                                 containerColor = MaterialTheme.colorScheme.surface
                             ),
@@ -385,6 +399,116 @@ fun BrowsePacksScreen(
                                     }
 
                                 }
+                        }
+                    }
+                }
+            }
+
+            // Preview dialog
+            if (previewPack != null) {
+                val pack = previewPack!!
+                Dialog(onDismissRequest = { previewPack = null }) {
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .fillMaxHeight(0.75f),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surface
+                        )
+                    ) {
+                        Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+                            Text(
+                                pack.name.ifBlank { "Unnamed" },
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                            Text(
+                                "${pack.wordCount} words",
+                                fontSize = 13.sp,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                            )
+                            if (pack.questionLang.isNotBlank() || pack.answerLang.isNotBlank()) {
+                                Text(
+                                    "${langWithFlag(pack.questionLang).ifBlank { "?" }} \u2192 ${langWithFlag(pack.answerLang).ifBlank { "?" }}",
+                                    fontSize = 13.sp,
+                                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f)
+                                )
+                            }
+
+                            Divider(modifier = Modifier.padding(vertical = 8.dp))
+
+                            if (previewLoading) {
+                                Box(
+                                    modifier = Modifier.fillMaxWidth().weight(1f),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    CircularProgressIndicator(
+                                        color = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(32.dp)
+                                    )
+                                }
+                            } else if (previewWords.isEmpty()) {
+                                Box(
+                                    modifier = Modifier.fillMaxWidth().weight(1f),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        "Failed to load preview",
+                                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                                    )
+                                }
+                            } else {
+                                LazyColumn(
+                                    modifier = Modifier.weight(1f),
+                                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                                ) {
+                                    itemsIndexed(previewWords) { index, word ->
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                                            horizontalArrangement = Arrangement.SpaceBetween
+                                        ) {
+                                            Text(
+                                                word.question,
+                                                fontSize = 15.sp,
+                                                modifier = Modifier.weight(1f),
+                                                maxLines = 1,
+                                                overflow = TextOverflow.Ellipsis
+                                            )
+                                            Text(
+                                                word.answer,
+                                                fontSize = 15.sp,
+                                                color = MaterialTheme.colorScheme.primary,
+                                                modifier = Modifier.weight(1f),
+                                                maxLines = 1,
+                                                overflow = TextOverflow.Ellipsis,
+                                                textAlign = androidx.compose.ui.text.style.TextAlign.End
+                                            )
+                                        }
+                                        if (word.reading.isNotBlank()) {
+                                            Text(
+                                                word.reading,
+                                                fontSize = 12.sp,
+                                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                                            )
+                                        }
+                                        if (index < previewWords.lastIndex) {
+                                            Divider(
+                                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f)
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(8.dp))
+                            TextButton(
+                                onClick = { previewPack = null },
+                                modifier = Modifier.align(Alignment.End)
+                            ) {
+                                Text("Close")
+                            }
                         }
                     }
                 }

@@ -345,6 +345,41 @@ object ApiClient {
         }
     }
 
+    fun fetchPackPreview(token: String, onResult: (Boolean, List<Word>) -> Unit) {
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val connection = URL("$BASE/words/$token").openConnection() as HttpURLConnection
+                connection.requestMethod = "GET"
+                connection.connectTimeout = 10000
+                connection.readTimeout = 10000
+
+                if (connection.responseCode == HttpURLConnection.HTTP_OK) {
+                    val json = connection.inputStream.bufferedReader().readText()
+                    val obj = JSONObject(json)
+                    val wordsArray = obj.getJSONArray("words")
+                    val words = mutableListOf<Word>()
+
+                    for (i in 0 until wordsArray.length()) {
+                        val w = wordsArray.getJSONObject(i)
+                        words.add(
+                            Word(
+                                question = w.getString("question"),
+                                answer = w.getString("answer"),
+                                reading = w.optString("reading", "")
+                            )
+                        )
+                    }
+
+                    withContext(Dispatchers.Main) { onResult(true, words) }
+                } else {
+                    withContext(Dispatchers.Main) { onResult(false, emptyList()) }
+                }
+            } catch (_: Exception) {
+                withContext(Dispatchers.Main) { onResult(false, emptyList()) }
+            }
+        }
+    }
+
     fun fetchPackForEdit(token: String, context: Context, onResult: (Boolean, EditPack?) -> Unit) {
         CoroutineScope(Dispatchers.IO).launch {
             try {
