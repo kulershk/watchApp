@@ -203,6 +203,26 @@ object ApiClient {
         }
     }
 
+    fun pushWatchSyncPacks(context: Context, tokens: Set<String>) {
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val connection = URL("$BASE/watch/sync-packs").openConnection() as HttpURLConnection
+                connection.requestMethod = "PUT"
+                connection.setRequestProperty("Content-Type", "application/json")
+                connection.doOutput = true
+                connection.connectTimeout = 10000
+                connection.readTimeout = 10000
+                addAuth(connection, context)
+
+                val body = JSONObject()
+                body.put("tokens", JSONArray(tokens.toList()))
+                OutputStreamWriter(connection.outputStream).use { it.write(body.toString()) }
+
+                connection.responseCode // fire and forget
+            } catch (_: Exception) {}
+        }
+    }
+
     // ============ PACKS ============
 
     fun fetchPackList(context: Context, onResult: (Boolean, List<RemotePack>) -> Unit) {

@@ -49,6 +49,9 @@ object AppSettings {
     fun setEnabledPacks(context: Context, tokens: Set<String>) {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         prefs.edit().putStringSet(KEY_ENABLED_PACKS, tokens).apply()
+        if (isLoggedIn(context)) {
+            ApiClient.pushWatchSyncPacks(context, tokens)
+        }
     }
 
     fun getAuthToken(context: Context): String? {

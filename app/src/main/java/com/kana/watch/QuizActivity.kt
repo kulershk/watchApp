@@ -20,6 +20,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.wear.compose.material.*
 import com.kana.watch.theme.KanaWatchTheme
 
@@ -95,8 +97,12 @@ fun QuizScreen(
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+            verticalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterVertically),
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 16.dp, vertical = 24.dp)
+                .wrapContentHeight(Alignment.CenterVertically)
         ) {
             // Big character / question or image
             if (imageFile != null) {
@@ -108,7 +114,7 @@ fun QuizScreen(
                         bitmap = bitmap.asImageBitmap(),
                         contentDescription = "Question image",
                         modifier = Modifier
-                            .sizeIn(maxWidth = 120.dp, maxHeight = 120.dp)
+                            .sizeIn(maxWidth = 80.dp, maxHeight = 80.dp)
                             .then(
                                 if (hasAudio) Modifier
                                     .border(2.dp, MaterialTheme.colors.secondary, RoundedCornerShape(8.dp))
@@ -144,7 +150,6 @@ fun QuizScreen(
 
             // Reading hint (hidden until tapped or answer revealed)
             if (reading.isNotBlank() && (hintShown || revealed)) {
-                Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = reading,
                     fontSize = 14.sp,
@@ -153,7 +158,7 @@ fun QuizScreen(
                 )
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(4.dp))
 
             if (!revealed) {
                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {

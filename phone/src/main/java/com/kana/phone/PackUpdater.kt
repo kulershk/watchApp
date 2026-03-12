@@ -8,7 +8,7 @@ import java.net.URL
 
 object PackUpdater {
 
-    fun checkForUpdates(context: Context) {
+    fun checkForUpdates(context: Context, onSynced: ((List<String>) -> Unit)? = null) {
         val packs = WordStorage.loadAllPacks(context)
         if (packs.isEmpty()) return
 
@@ -16,6 +16,8 @@ object PackUpdater {
         val authToken = AppSettings.getAuthToken(context)
 
         CoroutineScope(Dispatchers.IO).launch {
+            val syncedNames = mutableListOf<String>()
+
             for (pack in packs) {
                 try {
                     val connection = URL("$baseUrl${pack.token}").openConnection() as HttpURLConnection
@@ -66,9 +68,16 @@ object PackUpdater {
                             WordStorage.savePack(context, updated)
                             AudioCache.downloadPackAudio(context, words)
                             ImageCache.downloadPackImages(context, words)
+                            syncedNames.add("\"$name\" (${words.size} words)")
                         }
                     }
                 } catch (_: Exception) {}
+            }
+
+            if (syncedNames.isNotEmpty()) {
+                withContext(Dispatchers.Main) {
+                    onSynced?.invoke(syncedNames)
+                }
             }
         }
     }

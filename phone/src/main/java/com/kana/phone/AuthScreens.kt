@@ -249,7 +249,11 @@ fun RegisterScreen(
                 onClick = {
                     when {
                         email.isBlank() || password.isBlank() -> error = "All fields required"
-                        password.length < 6 -> error = "Password must be at least 6 characters"
+                        !android.util.Patterns.EMAIL_ADDRESS.matcher(email.trim()).matches() -> error = "Invalid email format"
+                        password.length < 8 -> error = "Password must be at least 8 characters"
+                        !password.any { it.isUpperCase() } -> error = "Password must contain an uppercase letter"
+                        !password.any { it.isLowerCase() } -> error = "Password must contain a lowercase letter"
+                        !password.any { it.isDigit() } -> error = "Password must contain a number"
                         password != confirmPassword -> error = "Passwords don't match"
                         else -> {
                             loading = true

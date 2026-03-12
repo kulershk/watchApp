@@ -15,7 +15,9 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -44,9 +46,6 @@ class MainActivity : ComponentActivity() {
                 notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
             }
         }
-
-        PackUpdater.checkForUpdates(this)
-
 
         val initialQuiz = if (intent.getStringExtra("nav_route") == "quiz") {
             QuizItem(
@@ -95,6 +94,17 @@ fun AppContent(context: android.content.Context, initialQuiz: QuizItem?) {
     var currentScreen by remember { mutableStateOf(startScreen) }
     var quizItem by remember { mutableStateOf(initialQuiz) }
     var editToken by remember { mutableStateOf<String?>(null) }
+    var syncMessage by remember { mutableStateOf<String?>(null) }
+
+    LaunchedEffect(Unit) {
+        PackUpdater.checkForUpdates(context) { syncedNames ->
+            syncMessage = "Synced: ${syncedNames.joinToString(", ")}"
+        }
+        // Push enabled packs to server for watch sync
+        if (AppSettings.isLoggedIn(context)) {
+            ApiClient.pushWatchSyncPacks(context, AppSettings.getEnabledPacks(context))
+        }
+    }
 
     when (currentScreen) {
         Screen.LOGIN -> LoginScreen(
@@ -107,6 +117,8 @@ fun AppContent(context: android.content.Context, initialQuiz: QuizItem?) {
         )
         Screen.HOME -> HomeScreen(
             context = context,
+            syncMessage = syncMessage,
+            onSyncMessageDismissed = { syncMessage = null },
             onStartQuiz = {
                 val item = getRandomQuizItem(context)
                 if (item != null) {
@@ -181,6 +193,8 @@ fun AppContent(context: android.content.Context, initialQuiz: QuizItem?) {
 @Composable
 fun HomeScreen(
     context: android.content.Context,
+    syncMessage: String? = null,
+    onSyncMessageDismissed: () -> Unit = {},
     onStartQuiz: () -> Unit,
     onPacks: () -> Unit,
     onBrowse: () -> Unit,
@@ -188,6 +202,14 @@ fun HomeScreen(
 ) {
     var isActive by remember { mutableStateOf(AppSettings.isNotificationsActive(context)) }
     val intervalMinutes = remember { AppSettings.getIntervalMinutes(context) }
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    LaunchedEffect(syncMessage) {
+        if (syncMessage != null) {
+            snackbarHostState.showSnackbar(syncMessage)
+            onSyncMessageDismissed()
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -201,6 +223,7 @@ fun HomeScreen(
                 )
             )
         },
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
         Column(
@@ -321,7 +344,9 @@ fun QuizScreen(
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
-            modifier = Modifier.padding(32.dp)
+            modifier = Modifier
+                .padding(32.dp)
+                .verticalScroll(rememberScrollState())
         ) {
             if (imageFile != null) {
                 val bitmap = remember(imageUrl) {

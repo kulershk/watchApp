@@ -15,7 +15,9 @@
       "Bash(ls -la /c/Users/kuler/Desktop/Stuff/watch/phone/src/main/java/com/kana/phone/*.kt)",
       "Bash(tree -L 3 -I 'node_modules|dist' \"C:\\\\Users\\\\kuler\\\\Desktop\\\\Stuff\\\\watchWeb\" 2>/dev/null || find \"C:\\\\Users\\\\kuler\\\\Desktop\\\\Stuff\\\\watchWeb\" -not -path \"*/node_modules/*\" -not -path \"*/.git/*\" -not -path \"*/dist/*\" -type f | sort)",
       "Bash(cd \"C:/Users/kuler/Desktop/Stuff/watchWeb\" && npx tsc --noEmit -p server/tsconfig.json 2>&1)",
-      "Bash(cd \"C:/Users/kuler/Desktop/Stuff/watchWeb\" && npm install 2>&1 | tail -5)"
+      "Bash(cd \"C:/Users/kuler/Desktop/Stuff/watchWeb\" && npm install 2>&1 | tail -5)",
+      "Bash(cd /c/Users/kuler/Desktop/Stuff/watchWeb && npm install swagger-ui-express && npm install -D @types/swagger-ui-express)",
+      "Bash(cd /c/Users/kuler/Desktop/Stuff/watchWeb && npx tsc --noEmit --skipLibCheck 2>&1 | head -20)"
     ]
   }
 }
