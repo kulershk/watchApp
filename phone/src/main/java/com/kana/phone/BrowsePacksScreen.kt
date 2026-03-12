@@ -13,6 +13,11 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -78,20 +83,16 @@ fun BrowsePacksScreen(
                 .padding(padding)
         ) {
             // Search bar
-            Row(
+            OutlinedTextField(
+                value = searchQuery,
+                onValueChange = { searchQuery = it },
+                placeholder = { Text("Search packs...") },
+                singleLine = true,
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp, vertical = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                OutlinedTextField(
-                    value = searchQuery,
-                    onValueChange = { searchQuery = it },
-                    placeholder = { Text("Search packs...") },
-                    singleLine = true,
-                    modifier = Modifier.weight(1f),
-                    trailingIcon = {
+                trailingIcon = {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
                         if (searchQuery.isNotBlank()) {
                             IconButton(onClick = {
                                 searchQuery = ""
@@ -100,21 +101,16 @@ fun BrowsePacksScreen(
                                 Text("✕", fontSize = 18.sp)
                             }
                         }
-                    },
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = MaterialTheme.colorScheme.primary,
-                        cursorColor = MaterialTheme.colorScheme.primary
-                    )
+                        IconButton(onClick = { loadPacks() }) {
+                            Icon(Icons.Filled.Search, contentDescription = "Search", tint = MaterialTheme.colorScheme.primary)
+                        }
+                    }
+                },
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                    cursorColor = MaterialTheme.colorScheme.primary
                 )
-                Button(
-                    onClick = { loadPacks() },
-                    contentPadding = PaddingValues(horizontal = 16.dp),
-                    shape = RoundedCornerShape(8.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primary
-                    )
-                ) { Text("Search") }
-            }
+            )
 
             // Language filters
             Row(
@@ -361,7 +357,7 @@ fun BrowsePacksScreen(
                                                     containerColor = MaterialTheme.colorScheme.primary
                                                 ),
                                                 shape = RoundedCornerShape(8.dp)
-                                            ) { Text("Download") }
+                                            ) { Icon(Icons.Filled.Download, contentDescription = "Download") }
                                         }
 
                                         // Stars
@@ -538,10 +534,11 @@ fun BrowsePacksScreen(
                                                             },
                                                         contentAlignment = Alignment.Center
                                                     ) {
-                                                        Text(
-                                                            if (playing) "\u25A0" else "\u25B6",
-                                                            color = MaterialTheme.colorScheme.onPrimary,
-                                                            fontSize = 12.sp
+                                                        Icon(
+                                                            if (playing) Icons.Filled.Stop else Icons.Filled.PlayArrow,
+                                                            contentDescription = if (playing) "Stop" else "Play",
+                                                            tint = MaterialTheme.colorScheme.onPrimary,
+                                                            modifier = Modifier.size(16.dp)
                                                         )
                                                     }
                                                     Spacer(modifier = Modifier.width(8.dp))

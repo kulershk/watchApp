@@ -11,6 +11,10 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Mic
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -107,10 +111,11 @@ fun WordAudioControls(
                     .background(MaterialTheme.colorScheme.primary),
                 enabled = !playing
             ) {
-                Text(
-                    if (playing) "\u25a0" else "\u25b6",
-                    color = MaterialTheme.colorScheme.onPrimary,
-                    fontSize = 14.sp
+                Icon(
+                    if (playing) Icons.Filled.Stop else Icons.Filled.PlayArrow,
+                    contentDescription = if (playing) "Stop" else "Play",
+                    tint = MaterialTheme.colorScheme.onPrimary,
+                    modifier = Modifier.size(18.dp)
                 )
             }
 
@@ -308,28 +313,12 @@ fun WordAudioControls(
                     .clip(CircleShape)
                     .background(MaterialTheme.colorScheme.primary)
             ) {
-                val micColor = MaterialTheme.colorScheme.onPrimary
-                Canvas(modifier = Modifier.size(20.dp)) {
-                    val w = size.width
-                    val h = size.height
-                    val stroke = Stroke(width = w * 0.1f, cap = StrokeCap.Round, join = StrokeJoin.Round)
-                    // Mic body (rounded rect)
-                    drawRoundRect(
-                        color = micColor,
-                        topLeft = androidx.compose.ui.geometry.Offset(w * 0.33f, h * 0.1f),
-                        size = androidx.compose.ui.geometry.Size(w * 0.34f, h * 0.45f),
-                        cornerRadius = androidx.compose.ui.geometry.CornerRadius(w * 0.17f),
-                    )
-                    // Arc around mic
-                    val arcPath = Path().apply {
-                        moveTo(w * 0.22f, h * 0.45f)
-                        cubicTo(w * 0.22f, h * 0.72f, w * 0.35f, h * 0.78f, w * 0.5f, h * 0.78f)
-                        cubicTo(w * 0.65f, h * 0.78f, w * 0.78f, h * 0.72f, w * 0.78f, h * 0.45f)
-                    }
-                    drawPath(arcPath, color = micColor, style = stroke)
-                    // Stem
-                    drawLine(micColor, androidx.compose.ui.geometry.Offset(w * 0.5f, h * 0.78f), androidx.compose.ui.geometry.Offset(w * 0.5f, h * 0.9f), strokeWidth = w * 0.1f, cap = StrokeCap.Round)
-                }
+                Icon(
+                    Icons.Filled.Mic,
+                    contentDescription = "Record",
+                    tint = MaterialTheme.colorScheme.onPrimary,
+                    modifier = Modifier.size(22.dp)
+                )
             }
             Text(
                 "Tap to record",
