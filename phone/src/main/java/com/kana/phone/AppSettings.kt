@@ -12,6 +12,7 @@ object AppSettings {
     private const val KEY_AUTH_TOKEN = "auth_token"
     private const val KEY_USER_EMAIL = "user_email"
     private const val KEY_FRIEND_CODE = "friend_code"
+    private const val KEY_DISPLAY_NAME = "display_name"
 
     private const val DEFAULT_INTERVAL = 20
     private const val DEFAULT_URL = "https://watch.osrs.lv/api/words/"
@@ -84,10 +85,20 @@ object AppSettings {
         prefs.edit().putString(KEY_FRIEND_CODE, code).apply()
     }
 
+    fun getDisplayName(context: Context): String? {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        return prefs.getString(KEY_DISPLAY_NAME, null)
+    }
+
+    fun setDisplayName(context: Context, name: String?) {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        prefs.edit().putString(KEY_DISPLAY_NAME, name).apply()
+    }
+
     fun isLoggedIn(context: Context): Boolean = getAuthToken(context) != null
 
     fun logout(context: Context) {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        prefs.edit().remove(KEY_AUTH_TOKEN).remove(KEY_USER_EMAIL).remove(KEY_FRIEND_CODE).apply()
+        prefs.edit().remove(KEY_AUTH_TOKEN).remove(KEY_USER_EMAIL).remove(KEY_FRIEND_CODE).remove(KEY_DISPLAY_NAME).apply()
     }
 }

@@ -91,6 +91,7 @@ object ApiClient {
                     AppSettings.setAuthToken(context, obj.getString("token"))
                     val user = obj.getJSONObject("user")
                     AppSettings.setUserEmail(context, user.getString("email"))
+                    AppSettings.setDisplayName(context, user.optString("displayName", ""))
                     AppSettings.setFriendCode(context, user.optString("friendCode", ""))
                     withContext(Dispatchers.Main) { onResult(true, "Registered") }
                 } else {
@@ -128,6 +129,7 @@ object ApiClient {
                     AppSettings.setAuthToken(context, obj.getString("token"))
                     val user = obj.getJSONObject("user")
                     AppSettings.setUserEmail(context, user.getString("email"))
+                    AppSettings.setDisplayName(context, user.optString("displayName", ""))
                     AppSettings.setFriendCode(context, user.optString("friendCode", ""))
                     withContext(Dispatchers.Main) { onResult(true, "Logged in") }
                 } else {
@@ -164,6 +166,7 @@ object ApiClient {
                     AppSettings.setAuthToken(context, obj.getString("token"))
                     val user = obj.getJSONObject("user")
                     AppSettings.setUserEmail(context, user.getString("email"))
+                    AppSettings.setDisplayName(context, user.optString("displayName", ""))
                     AppSettings.setFriendCode(context, user.optString("friendCode", ""))
                     val isNewUser = obj.optBoolean("isNewUser", false)
                     withContext(Dispatchers.Main) { onResult(true, "Signed in with Google", isNewUser) }
@@ -192,6 +195,7 @@ object ApiClient {
                 OutputStreamWriter(connection.outputStream).use { it.write(body.toString()) }
 
                 val success = connection.responseCode == HttpURLConnection.HTTP_OK
+                if (success) AppSettings.setDisplayName(context, displayName)
                 withContext(Dispatchers.Main) { onResult(success) }
             } catch (_: Exception) {
                 withContext(Dispatchers.Main) { onResult(false) }
