@@ -6,6 +6,7 @@ import android.os.Build
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -115,6 +116,14 @@ fun AppContent(context: android.content.Context, initialQuiz: QuizItem?) {
                     updateAvailable = latestPhone
                 }
             }
+        }
+    }
+
+    BackHandler {
+        when (currentScreen) {
+            Screen.HOME, Screen.LOGIN, Screen.REGISTER -> (context as? ComponentActivity)?.moveTaskToBack(true)
+            Screen.PACK_EDITOR -> currentScreen = Screen.PACK_LIST
+            else -> currentScreen = Screen.HOME
         }
     }
 
@@ -558,14 +567,6 @@ fun QuizScreen(
             }
         }
 
-        TextButton(
-            onClick = onBack,
-            modifier = Modifier
-                .align(Alignment.TopStart)
-                .padding(8.dp)
-        ) {
-            Text("\u2190 Back", color = MaterialTheme.colorScheme.onSurface)
-        }
     }
 }
 

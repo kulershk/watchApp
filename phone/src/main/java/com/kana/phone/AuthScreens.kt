@@ -94,16 +94,6 @@ fun LoginScreen(
                 contentScale = androidx.compose.ui.layout.ContentScale.FillWidth
             )
 
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Text(
-                "Language Learning",
-                fontSize = 28.sp,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary,
-                textAlign = TextAlign.Center
-            )
-
             Spacer(modifier = Modifier.height(32.dp))
 
             OutlinedTextField(

@@ -511,14 +511,17 @@ object ApiClient {
 
                 OutputStreamWriter(connection.outputStream).use { it.write(body.toString()) }
 
-                if (connection.responseCode == HttpURLConnection.HTTP_OK ||
-                    connection.responseCode == HttpURLConnection.HTTP_CREATED) {
+                val responseCode = connection.responseCode
+                if (responseCode == HttpURLConnection.HTTP_OK ||
+                    responseCode == HttpURLConnection.HTTP_CREATED) {
                     val json = connection.inputStream.bufferedReader().readText()
                     val obj = JSONObject(json)
                     val id = obj.getInt("id").toString()
                     withContext(Dispatchers.Main) { onResult(true, id) }
                 } else {
-                    withContext(Dispatchers.Main) { onResult(false, "Server error") }
+                    val errJson = connection.errorStream?.bufferedReader()?.readText() ?: ""
+                    val msg = try { JSONObject(errJson).optString("error", "Server error ($responseCode)") } catch (_: Exception) { "Server error ($responseCode)" }
+                    withContext(Dispatchers.Main) { onResult(false, msg) }
                 }
             } catch (e: Exception) {
                 withContext(Dispatchers.Main) { onResult(false, "Failed: ${e.message}") }
