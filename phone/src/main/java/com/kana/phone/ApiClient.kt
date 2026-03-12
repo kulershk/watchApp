@@ -62,6 +62,31 @@ object ApiClient {
         }
     }
 
+    // ============ VERSION ============
+
+    fun checkVersion(context: Context, onResult: (latestPhone: String?, latestWatch: String?) -> Unit) {
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val connection = URL("$BASE/version").openConnection() as HttpURLConnection
+                connection.requestMethod = "GET"
+                connection.connectTimeout = 5000
+                connection.readTimeout = 5000
+
+                if (connection.responseCode == HttpURLConnection.HTTP_OK) {
+                    val json = connection.inputStream.bufferedReader().readText()
+                    val obj = JSONObject(json)
+                    val phone = obj.optString("phone", null)
+                    val watch = obj.optString("watch", null)
+                    withContext(Dispatchers.Main) { onResult(phone, watch) }
+                } else {
+                    withContext(Dispatchers.Main) { onResult(null, null) }
+                }
+            } catch (_: Exception) {
+                withContext(Dispatchers.Main) { onResult(null, null) }
+            }
+        }
+    }
+
     // ============ AUTH ============
 
     fun register(email: String, password: String, displayName: String, context: Context, onResult: (Boolean, String) -> Unit) {

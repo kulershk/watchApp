@@ -51,6 +51,7 @@ class MainActivity : ComponentActivity() {
 
         refreshUI()
         syncFromServer()
+        checkForUpdate()
     }
 
     override fun onResume() {
@@ -150,6 +151,33 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    private var latestWatchVersion: String? = null
+
+    private fun checkForUpdate() {
+        val currentVersion = try {
+            packageManager.getPackageInfo(packageName, 0).versionName
+        } catch (_: Exception) { return }
+
+        val apiUrl = AppSettings.getApiUrl(this)
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val connection = URL("$apiUrl/version").openConnection() as java.net.HttpURLConnection
+                connection.requestMethod = "GET"
+                connection.connectTimeout = 5000
+                connection.readTimeout = 5000
+                if (connection.responseCode == java.net.HttpURLConnection.HTTP_OK) {
+                    val json = connection.inputStream.bufferedReader().readText()
+                    val obj = JSONObject(json)
+                    val watch = obj.optString("watch", "")
+                    if (watch.isNotBlank() && watch != currentVersion) {
+                        latestWatchVersion = watch
+                        withContext(Dispatchers.Main) { refreshUI() }
+                    }
+                }
+            } catch (_: Exception) {}
+        }
+    }
+
     private fun refreshUI() {
         val isPaired = AppSettings.isPaired(this)
 
@@ -159,6 +187,7 @@ class MainActivity : ComponentActivity() {
                     MainMenuScreen(
                         isActive = AppSettings.isNotificationsActive(this),
                         intervalMinutes = AppSettings.getIntervalMinutes(this),
+                        updateAvailable = latestWatchVersion,
                         onStartQuiz = { startQuiz() },
                         onSettings = { openSettings() },
                         onSync = { syncFromServer() },
@@ -407,6 +436,7 @@ fun PairScreen(onPaired: () -> Unit) {
 fun MainMenuScreen(
     isActive: Boolean,
     intervalMinutes: Int,
+    updateAvailable: String? = null,
     onStartQuiz: () -> Unit,
     onSettings: () -> Unit,
     onSync: () -> Unit,
@@ -434,6 +464,20 @@ fun MainMenuScreen(
                     color = MaterialTheme.colors.primary,
                     textAlign = TextAlign.Center
                 )
+            }
+
+            if (updateAvailable != null) {
+                item {
+                    Chip(
+                        onClick = {},
+                        label = { Text("Update available", fontSize = 12.sp) },
+                        secondaryLabel = { Text("v$updateAvailable on Play Store", fontSize = 10.sp) },
+                        colors = ChipDefaults.chipColors(
+                            backgroundColor = MaterialTheme.colors.primary.copy(alpha = 0.3f)
+                        ),
+                        modifier = Modifier.fillMaxWidth(0.85f)
+                    )
+                }
             }
 
             item { Spacer(modifier = Modifier.height(4.dp)) }

@@ -95,6 +95,7 @@ fun AppContent(context: android.content.Context, initialQuiz: QuizItem?) {
     var quizItem by remember { mutableStateOf(initialQuiz) }
     var editToken by remember { mutableStateOf<String?>(null) }
     var syncMessage by remember { mutableStateOf<String?>(null) }
+    var updateAvailable by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(Unit) {
         PackUpdater.checkForUpdates(context) { syncedNames ->
@@ -103,6 +104,17 @@ fun AppContent(context: android.content.Context, initialQuiz: QuizItem?) {
         // Push enabled packs to server for watch sync
         if (AppSettings.isLoggedIn(context)) {
             ApiClient.pushWatchSyncPacks(context, AppSettings.getEnabledPacks(context))
+        }
+        // Check for app updates
+        val currentVersion = try {
+            context.packageManager.getPackageInfo(context.packageName, 0).versionName
+        } catch (_: Exception) { null }
+        if (currentVersion != null) {
+            ApiClient.checkVersion(context) { latestPhone, _ ->
+                if (latestPhone != null && latestPhone != currentVersion) {
+                    updateAvailable = latestPhone
+                }
+            }
         }
     }
 
@@ -119,6 +131,7 @@ fun AppContent(context: android.content.Context, initialQuiz: QuizItem?) {
             context = context,
             syncMessage = syncMessage,
             onSyncMessageDismissed = { syncMessage = null },
+            updateAvailable = updateAvailable,
             onStartQuiz = {
                 val item = getRandomQuizItem(context)
                 if (item != null) {
@@ -195,6 +208,7 @@ fun HomeScreen(
     context: android.content.Context,
     syncMessage: String? = null,
     onSyncMessageDismissed: () -> Unit = {},
+    updateAvailable: String? = null,
     onStartQuiz: () -> Unit,
     onPacks: () -> Unit,
     onBrowse: () -> Unit,
@@ -234,6 +248,55 @@ fun HomeScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            if (updateAvailable != null) {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.primaryContainer
+                    ),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                "Update available",
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
+                            Text(
+                                "Version $updateAvailable is available",
+                                fontSize = 12.sp,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+                            )
+                        }
+                        FilledTonalButton(
+                            onClick = {
+                                try {
+                                    val intent = android.content.Intent(
+                                        android.content.Intent.ACTION_VIEW,
+                                        android.net.Uri.parse("market://details?id=${context.packageName}")
+                                    )
+                                    context.startActivity(intent)
+                                } catch (_: Exception) {
+                                    val intent = android.content.Intent(
+                                        android.content.Intent.ACTION_VIEW,
+                                        android.net.Uri.parse("https://play.google.com/store/apps/details?id=${context.packageName}")
+                                    )
+                                    context.startActivity(intent)
+                                }
+                            },
+                            shape = RoundedCornerShape(8.dp)
+                        ) {
+                            Text("Update", fontSize = 13.sp)
+                        }
+                    }
+                }
+            }
             Button(
                 onClick = onStartQuiz,
                 modifier = Modifier.fillMaxWidth(),
