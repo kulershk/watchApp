@@ -231,7 +231,7 @@ fun PackListScreen(
                                                 sharing = false
                                                 if (success) {
                                                     val packName = pack.name.ifBlank { "Unnamed" }
-                                                    val shareText = "Check out my word pack \"$packName\" on Language Learning!\nDownload it with share code: $code"
+                                                    val shareText = "Check out my word pack \"$packName\" on Language Learning!\nDownload pack with this code: $code"
                                                     val intent = Intent(Intent.ACTION_SEND).apply {
                                                         type = "text/plain"
                                                         putExtra(Intent.EXTRA_TEXT, shareText)

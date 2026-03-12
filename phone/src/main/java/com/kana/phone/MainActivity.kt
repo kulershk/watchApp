@@ -507,11 +507,13 @@ fun QuizScreen(
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onBackground,
                     textAlign = TextAlign.Center,
-                    modifier = if (hasAudio) Modifier
-                        .border(2.dp, MaterialTheme.colorScheme.secondary, RoundedCornerShape(12.dp))
-                        .clickable { AudioCache.play(context, audioUrl) }
-                        .padding(horizontal = 20.dp, vertical = 8.dp)
-                    else Modifier
+                    modifier = Modifier.fillMaxWidth().then(
+                        if (hasAudio) Modifier
+                            .border(2.dp, MaterialTheme.colorScheme.secondary, RoundedCornerShape(12.dp))
+                            .clickable { AudioCache.play(context, audioUrl) }
+                            .padding(horizontal = 20.dp, vertical = 8.dp)
+                        else Modifier
+                    )
                 )
             }
 
