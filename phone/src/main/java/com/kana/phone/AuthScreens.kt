@@ -173,7 +173,10 @@ fun LoginScreen(
                                 ApiClient.loginWithGoogle(googleIdToken.idToken, context) { success, msg, isNewUser ->
                                     loading = false
                                     if (success) {
-                                        if (isNewUser) showDisplayNameDialog = true else onLoggedIn()
+                                        if (isNewUser) {
+                                            displayNameInput = googleIdToken.displayName ?: ""
+                                            showDisplayNameDialog = true
+                                        } else onLoggedIn()
                                     } else error = msg
                                 }
                             } catch (e: Exception) {
