@@ -36,7 +36,43 @@ fun LoginScreen(
     var password by remember { mutableStateOf("") }
     var loading by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf("") }
+    var showDisplayNameDialog by remember { mutableStateOf(false) }
+    var displayNameInput by remember { mutableStateOf("") }
     val scope = rememberCoroutineScope()
+
+    if (showDisplayNameDialog) {
+        AlertDialog(
+            onDismissRequest = {
+                showDisplayNameDialog = false
+                onLoggedIn()
+            },
+            title = { Text("Set Display Name") },
+            text = {
+                OutlinedTextField(
+                    value = displayNameInput,
+                    onValueChange = { displayNameInput = it },
+                    label = { Text("Display Name") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    if (displayNameInput.isNotBlank()) {
+                        ApiClient.updateDisplayName(displayNameInput.trim(), context) { _ -> }
+                    }
+                    showDisplayNameDialog = false
+                    onLoggedIn()
+                }) { Text("Save") }
+            },
+            dismissButton = {
+                TextButton(onClick = {
+                    showDisplayNameDialog = false
+                    onLoggedIn()
+                }) { Text("Skip") }
+            }
+        )
+    }
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background
@@ -134,9 +170,11 @@ fun LoginScreen(
                                 val result = credentialManager.getCredential(context as Activity, request)
                                 val googleIdToken = GoogleIdTokenCredential.createFrom(result.credential.data)
 
-                                ApiClient.loginWithGoogle(googleIdToken.idToken, context) { success, msg ->
+                                ApiClient.loginWithGoogle(googleIdToken.idToken, context) { success, msg, isNewUser ->
                                     loading = false
-                                    if (success) onLoggedIn() else error = msg
+                                    if (success) {
+                                        if (isNewUser) showDisplayNameDialog = true else onLoggedIn()
+                                    } else error = msg
                                 }
                             } catch (e: Exception) {
                                 loading = false
@@ -169,6 +207,7 @@ fun RegisterScreen(
     onGoToLogin: () -> Unit
 ) {
     val context = LocalContext.current
+    var displayName by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
@@ -195,6 +234,19 @@ fun RegisterScreen(
             )
 
             Spacer(modifier = Modifier.height(32.dp))
+
+            OutlinedTextField(
+                value = displayName,
+                onValueChange = { displayName = it; error = "" },
+                label = { Text("Display Name") },
+                keyboardOptions = KeyboardOptions(
+                    imeAction = ImeAction.Next
+                ),
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
 
             OutlinedTextField(
                 value = email,
@@ -257,7 +309,7 @@ fun RegisterScreen(
                         password != confirmPassword -> error = "Passwords don't match"
                         else -> {
                             loading = true
-                            ApiClient.register(email, password, context) { success, msg ->
+                            ApiClient.register(email, password, displayName.trim(), context) { success, msg ->
                                 loading = false
                                 if (success) onRegistered() else error = msg
                             }

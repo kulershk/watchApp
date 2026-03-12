@@ -64,7 +64,7 @@ object ApiClient {
 
     // ============ AUTH ============
 
-    fun register(email: String, password: String, context: Context, onResult: (Boolean, String) -> Unit) {
+    fun register(email: String, password: String, displayName: String, context: Context, onResult: (Boolean, String) -> Unit) {
         CoroutineScope(Dispatchers.IO).launch {
             try {
                 val connection = URL("$BASE/auth/register").openConnection() as HttpURLConnection
@@ -77,6 +77,7 @@ object ApiClient {
                 val body = JSONObject()
                 body.put("email", email)
                 body.put("password", password)
+                if (displayName.isNotBlank()) body.put("displayName", displayName)
                 OutputStreamWriter(connection.outputStream).use { it.write(body.toString()) }
 
                 val responseCode = connection.responseCode
@@ -138,7 +139,7 @@ object ApiClient {
         }
     }
 
-    fun loginWithGoogle(idToken: String, context: Context, onResult: (Boolean, String) -> Unit) {
+    fun loginWithGoogle(idToken: String, context: Context, onResult: (Boolean, String, Boolean) -> Unit) {
         CoroutineScope(Dispatchers.IO).launch {
             try {
                 val connection = URL("$BASE/auth/google").openConnection() as HttpURLConnection
@@ -164,12 +165,36 @@ object ApiClient {
                     val user = obj.getJSONObject("user")
                     AppSettings.setUserEmail(context, user.getString("email"))
                     AppSettings.setFriendCode(context, user.optString("friendCode", ""))
-                    withContext(Dispatchers.Main) { onResult(true, "Signed in with Google") }
+                    val isNewUser = obj.optBoolean("isNewUser", false)
+                    withContext(Dispatchers.Main) { onResult(true, "Signed in with Google", isNewUser) }
                 } else {
-                    withContext(Dispatchers.Main) { onResult(false, obj.optString("error", "Google sign-in failed")) }
+                    withContext(Dispatchers.Main) { onResult(false, obj.optString("error", "Google sign-in failed"), false) }
                 }
             } catch (e: Exception) {
-                withContext(Dispatchers.Main) { onResult(false, "Failed: ${e.message}") }
+                withContext(Dispatchers.Main) { onResult(false, "Failed: ${e.message}", false) }
+            }
+        }
+    }
+
+    fun updateDisplayName(displayName: String, context: Context, onResult: (Boolean) -> Unit) {
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val connection = URL("$BASE/auth/display-name").openConnection() as HttpURLConnection
+                connection.requestMethod = "PUT"
+                connection.setRequestProperty("Content-Type", "application/json")
+                connection.doOutput = true
+                connection.connectTimeout = 10000
+                connection.readTimeout = 10000
+                addAuth(connection, context)
+
+                val body = JSONObject()
+                body.put("displayName", displayName)
+                OutputStreamWriter(connection.outputStream).use { it.write(body.toString()) }
+
+                val success = connection.responseCode == HttpURLConnection.HTTP_OK
+                withContext(Dispatchers.Main) { onResult(success) }
+            } catch (_: Exception) {
+                withContext(Dispatchers.Main) { onResult(false) }
             }
         }
     }

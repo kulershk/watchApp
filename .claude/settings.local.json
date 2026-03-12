@@ -17,7 +17,11 @@
       "Bash(cd \"C:/Users/kuler/Desktop/Stuff/watchWeb\" && npx tsc --noEmit -p server/tsconfig.json 2>&1)",
       "Bash(cd \"C:/Users/kuler/Desktop/Stuff/watchWeb\" && npm install 2>&1 | tail -5)",
       "Bash(cd /c/Users/kuler/Desktop/Stuff/watchWeb && npm install swagger-ui-express && npm install -D @types/swagger-ui-express)",
-      "Bash(cd /c/Users/kuler/Desktop/Stuff/watchWeb && npx tsc --noEmit --skipLibCheck 2>&1 | head -20)"
+      "Bash(cd /c/Users/kuler/Desktop/Stuff/watchWeb && npx tsc --noEmit --skipLibCheck 2>&1 | head -20)",
+      "Bash(keytool -printcert -file /c/Users/kuler/Downloads/deployment_cert.der 2>&1 | grep SHA1)",
+      "Bash(keytool -printcert -file /c/Users/kuler/Downloads/deployment_cert.der 2>&1)",
+      "Bash(openssl x509:*)",
+      "Bash(\"/c/Program Files/Android/Android Studio/jbr/bin/keytool.exe\" -list -v -keystore /c/Users/kuler/.android/debug.keystore -alias androiddebugkey -storepass android 2>&1 | grep SHA1)"
     ]
   }
 }
