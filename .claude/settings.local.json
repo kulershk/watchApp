@@ -25,7 +25,13 @@
       "Bash(grep -r \"preview\\\\|Preview\\\\|word_count\\\\|download_count\" /c/Users/kuler/Desktop/Stuff/watch/app/src/main/java/com/kana/watch --include=\"*.kt\" 2>/dev/null | head -20)",
       "Bash(ls C:/Users/kuler/Desktop/Stuff/watch/gradlew*)",
       "Bash(ls C:/Users/kuler/Desktop/Stuff/watch/*.bat C:/Users/kuler/Desktop/Stuff/watch/*.gradle* 2>/dev/null | head -10)",
-      "Bash(ls C:/Users/kuler/Desktop/Stuff/watch/phone/src/main/res/drawable*/ 2>/dev/null; ls C:/Users/kuler/Desktop/Stuff/watch/phone/src/main/res/mipmap*/ 2>/dev/null)"
+      "Bash(ls C:/Users/kuler/Desktop/Stuff/watch/phone/src/main/res/drawable*/ 2>/dev/null; ls C:/Users/kuler/Desktop/Stuff/watch/phone/src/main/res/mipmap*/ 2>/dev/null)",
+      "Bash(adb devices:*)",
+      "Bash(adb -s R5CXC35YNAH logcat -d | grep -i \"FATAL\\\\|AndroidRuntime\\\\|com.kana.phone\" | tail -50)",
+      "Bash(adb -s R5CXC35YNAH logcat -d | grep -i \"kana\" | tail -30)",
+      "Bash(./gradlew :phone:assembleDebug 2>&1 | tail -30)",
+      "Bash(./gradlew :phone:assembleDebug 2>&1 | tail -40)",
+      "Bash(ls gradlew*)"
     ]
   }
 }

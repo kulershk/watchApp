@@ -65,10 +65,11 @@ object WordStorage {
                 )
             }
 
+            val packId = packObj.optString("id", "") .ifEmpty { packObj.optString("token", "") }
             packs.add(
                 WordPack(
-                    id = packObj.getString("id"),
-                    name = packObj.optString("name", "Pack ${packObj.getString("id")}"),
+                    id = packId,
+                    name = packObj.optString("name", "Pack $packId"),
                     updated = packObj.optString("updated", ""),
                     words = words,
                     questionLang = packObj.optString("question_lang", ""),

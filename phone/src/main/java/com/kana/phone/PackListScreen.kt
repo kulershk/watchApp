@@ -31,13 +31,20 @@ fun PackListScreen(
     var downloadingIds by remember { mutableStateOf(setOf<String>()) }
 
     var syncingIds by remember { mutableStateOf(setOf<String>()) }
+    var enabledPacks by remember { mutableStateOf(AppSettings.getEnabledPacks(context)) }
 
     LaunchedEffect(Unit) {
+        // Auto-sync all local packs (including downloaded from others)
+        PackUpdater.checkForUpdates(context) { _ ->
+            localPacks = WordStorage.loadAllPacks(context)
+            localIds = localPacks.map { it.id }.toSet()
+        }
+
         ApiClient.fetchPackList(context) { success, result ->
             packs = result
             loading = false
 
-            // Auto-sync out-of-date local packs
+            // Auto-sync owned/collaborated packs that are out of date
             if (success) {
                 for (remotePack in result) {
                     val localPack = localPacks.find { it.id == remotePack.id }
@@ -148,18 +155,22 @@ fun PackListScreen(
                                     }
                                 }
                                 Column(horizontalAlignment = Alignment.End) {
+                                    if (isLocal) {
+                                        Switch(
+                                            checked = pack.id in enabledPacks,
+                                            onCheckedChange = { checked ->
+                                                val current = enabledPacks.toMutableSet()
+                                                if (checked) current.add(pack.id) else current.remove(pack.id)
+                                                AppSettings.setEnabledPacks(context, current)
+                                                enabledPacks = current
+                                            }
+                                        )
+                                    }
                                     if (!pack.isOwner) {
                                         Text(
                                             "Shared",
                                             fontSize = 11.sp,
                                             color = MaterialTheme.colorScheme.tertiary
-                                        )
-                                    }
-                                    if (pack.isPublic) {
-                                        Text(
-                                            "Public",
-                                            fontSize = 12.sp,
-                                            color = MaterialTheme.colorScheme.primary
                                         )
                                     }
                                 }
@@ -261,6 +272,7 @@ fun PackListScreen(
                                                 downloadingIds = downloadingIds - pack.id
                                                 if (success) {
                                                     localIds = localIds + pack.id
+                                                    enabledPacks = AppSettings.getEnabledPacks(context)
                                                 }
                                                 Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
                                             }
@@ -296,28 +308,45 @@ fun PackListScreen(
                             shape = RoundedCornerShape(12.dp)
                         ) {
                             Column(modifier = Modifier.padding(16.dp)) {
-                                Text(
-                                    pack.name.ifBlank { "Unnamed" },
-                                    fontSize = 16.sp,
-                                    fontWeight = FontWeight.Bold
-                                )
-                                Text(
-                                    "${pack.words.size} words" + if (pack.downloadCount > 0) " \u2022 ${pack.downloadCount} downloads" else "",
-                                    fontSize = 13.sp,
-                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                                )
-                                if (pack.author.isNotBlank()) {
-                                    Text(
-                                        "by ${pack.author}",
-                                        fontSize = 12.sp,
-                                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
-                                    )
-                                }
-                                if (pack.questionLang.isNotBlank() || pack.answerLang.isNotBlank()) {
-                                    Text(
-                                        "${langWithFlag(pack.questionLang).ifBlank { "?" }} \u2192 ${langWithFlag(pack.answerLang).ifBlank { "?" }}",
-                                        fontSize = 12.sp,
-                                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f)
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(
+                                            pack.name.ifBlank { "Unnamed" },
+                                            fontSize = 16.sp,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                        Text(
+                                            "${pack.words.size} words" + if (pack.downloadCount > 0) " \u2022 ${pack.downloadCount} downloads" else "",
+                                            fontSize = 13.sp,
+                                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                                        )
+                                        if (pack.author.isNotBlank()) {
+                                            Text(
+                                                "by ${pack.author}",
+                                                fontSize = 12.sp,
+                                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                                            )
+                                        }
+                                        if (pack.questionLang.isNotBlank() || pack.answerLang.isNotBlank()) {
+                                            Text(
+                                                "${langWithFlag(pack.questionLang).ifBlank { "?" }} \u2192 ${langWithFlag(pack.answerLang).ifBlank { "?" }}",
+                                                fontSize = 12.sp,
+                                                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f)
+                                            )
+                                        }
+                                    }
+                                    Switch(
+                                        checked = pack.id in enabledPacks,
+                                        onCheckedChange = { checked ->
+                                            val current = enabledPacks.toMutableSet()
+                                            if (checked) current.add(pack.id) else current.remove(pack.id)
+                                            AppSettings.setEnabledPacks(context, current)
+                                            enabledPacks = current
+                                        }
                                     )
                                 }
 

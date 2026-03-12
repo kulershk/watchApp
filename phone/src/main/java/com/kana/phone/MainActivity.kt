@@ -138,7 +138,7 @@ fun AppContent(context: android.content.Context, initialQuiz: QuizItem?) {
                     quizItem = item
                     currentScreen = Screen.QUIZ
                 } else {
-                    Toast.makeText(context, "Nothing enabled! Check Settings.", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, "Nothing enabled! Check My Packs.", Toast.LENGTH_SHORT).show()
                 }
             },
             onPacks = { currentScreen = Screen.PACK_LIST },
@@ -576,9 +576,6 @@ fun SettingsScreen(onBack: () -> Unit, onLogout: () -> Unit, context: android.co
     var selectedIndex by remember {
         mutableStateOf(presets.indexOf(AppSettings.getIntervalMinutes(context)).coerceAtLeast(0))
     }
-    var packs by remember { mutableStateOf(WordStorage.loadAllPacks(context)) }
-    var enabledPacks by remember { mutableStateOf(AppSettings.getEnabledPacks(context)) }
-
     Scaffold(
         topBar = {
             TopAppBar(
@@ -660,81 +657,6 @@ fun SettingsScreen(onBack: () -> Unit, onLogout: () -> Unit, context: android.co
                             }
                         }
                     ) { Text("\u25b6", fontSize = 18.sp) }
-                }
-            }
-
-            if (packs.isNotEmpty()) {
-                item {
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        "Word Packs",
-                        fontSize = 14.sp,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                    )
-                }
-
-                items(packs, key = { it.id }) { pack ->
-                    val isEnabled = pack.id in enabledPacks
-
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.surface
-                        )
-                    ) {
-                        Column(modifier = Modifier.padding(16.dp)) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.SpaceBetween
-                            ) {
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(pack.name, fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                                    Text(
-                                        "${pack.words.size} words \u2022 ${pack.updated}",
-                                        fontSize = 12.sp,
-                                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                                    )
-                                }
-                                Switch(
-                                    checked = isEnabled,
-                                    onCheckedChange = { checked ->
-                                        val current = enabledPacks.toMutableSet()
-                                        if (checked) current.add(pack.id) else current.remove(pack.id)
-                                        AppSettings.setEnabledPacks(context, current)
-                                        enabledPacks = current
-                                    }
-                                )
-                            }
-
-                            Spacer(modifier = Modifier.height(8.dp))
-
-                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                FilledTonalButton(
-                                    shape = RoundedCornerShape(8.dp),
-                                    onClick = {
-                                        PackUpdater.updatePack(context, pack.id) { _, message ->
-                                            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
-                                            packs = WordStorage.loadAllPacks(context)
-                                        }
-                                    }
-                                ) { Text("Update") }
-
-                                Button(
-                                    onClick = {
-                                        WordStorage.deletePack(context, pack.id)
-
-                                        packs = WordStorage.loadAllPacks(context)
-                                        enabledPacks = AppSettings.getEnabledPacks(context)
-                                    },
-                                    shape = RoundedCornerShape(8.dp),
-                                    colors = ButtonDefaults.buttonColors(
-                                        containerColor = MaterialTheme.colorScheme.error
-                                    )
-                                ) { Text("Delete") }
-                            }
-                        }
-                    }
                 }
             }
 
