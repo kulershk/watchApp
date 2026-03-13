@@ -9,7 +9,11 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.ArrowDropUp
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -141,34 +145,48 @@ fun PackEditorScreen(
                         ) {
                             // Question language
                             var qExpanded by remember { mutableStateOf(false) }
-                            ExposedDropdownMenuBox(
-                                expanded = qExpanded,
-                                onExpandedChange = { qExpanded = it },
-                                modifier = Modifier.weight(1f)
-                            ) {
+                            var qSearch by remember { mutableStateOf("") }
+                            val qFiltered = if (qSearch.isBlank()) languages else languages.filter {
+                                langWithFlag(it).contains(qSearch, ignoreCase = true) || it.contains(qSearch, ignoreCase = true)
+                            }
+                            Box(modifier = Modifier.weight(1f)) {
                                 OutlinedTextField(
                                     value = langWithFlag(questionLang).ifBlank { "Not set" },
                                     onValueChange = {},
                                     readOnly = true,
-                                    label = { Text("Questions") },
-                                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = qExpanded) },
-                                    modifier = Modifier.menuAnchor().fillMaxWidth(),
+                                    label = { Text("Cards") },
+                                    trailingIcon = {
+                                        Icon(if (qExpanded) Icons.Filled.ArrowDropUp else Icons.Filled.ArrowDropDown, contentDescription = null)
+                                    },
+                                    modifier = Modifier.fillMaxWidth(),
                                     singleLine = true,
                                     colors = OutlinedTextFieldDefaults.colors(
                                         focusedBorderColor = MaterialTheme.colorScheme.primary,
                                         cursorColor = MaterialTheme.colorScheme.primary
                                     )
                                 )
-                                ExposedDropdownMenu(
+                                Box(modifier = Modifier.matchParentSize().clickable { qExpanded = !qExpanded; qSearch = "" })
+                                DropdownMenu(
                                     expanded = qExpanded,
-                                    onDismissRequest = { qExpanded = false }
+                                    onDismissRequest = { qExpanded = false },
+                                    modifier = Modifier.heightIn(max = 300.dp)
                                 ) {
-                                    languages.forEach { lang ->
+                                    OutlinedTextField(
+                                        value = qSearch,
+                                        onValueChange = { qSearch = it },
+                                        placeholder = { Text("Search...", fontSize = 13.sp) },
+                                        modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
+                                        singleLine = true,
+                                        textStyle = LocalTextStyle.current.copy(fontSize = 13.sp)
+                                    )
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    qFiltered.forEach { lang ->
                                         DropdownMenuItem(
                                             text = { Text(langWithFlag(lang).ifBlank { "Not set" }) },
                                             onClick = {
                                                 questionLang = lang
                                                 qExpanded = false
+                                                qSearch = ""
                                             }
                                         )
                                     }
@@ -177,34 +195,48 @@ fun PackEditorScreen(
 
                             // Answer language
                             var aExpanded by remember { mutableStateOf(false) }
-                            ExposedDropdownMenuBox(
-                                expanded = aExpanded,
-                                onExpandedChange = { aExpanded = it },
-                                modifier = Modifier.weight(1f)
-                            ) {
+                            var aSearch by remember { mutableStateOf("") }
+                            val aFiltered = if (aSearch.isBlank()) languages else languages.filter {
+                                langWithFlag(it).contains(aSearch, ignoreCase = true) || it.contains(aSearch, ignoreCase = true)
+                            }
+                            Box(modifier = Modifier.weight(1f)) {
                                 OutlinedTextField(
                                     value = langWithFlag(answerLang).ifBlank { "Not set" },
                                     onValueChange = {},
                                     readOnly = true,
-                                    label = { Text("Answers") },
-                                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = aExpanded) },
-                                    modifier = Modifier.menuAnchor().fillMaxWidth(),
+                                    label = { Text("Explanations") },
+                                    trailingIcon = {
+                                        Icon(if (aExpanded) Icons.Filled.ArrowDropUp else Icons.Filled.ArrowDropDown, contentDescription = null)
+                                    },
+                                    modifier = Modifier.fillMaxWidth(),
                                     singleLine = true,
                                     colors = OutlinedTextFieldDefaults.colors(
                                         focusedBorderColor = MaterialTheme.colorScheme.primary,
                                         cursorColor = MaterialTheme.colorScheme.primary
                                     )
                                 )
-                                ExposedDropdownMenu(
+                                Box(modifier = Modifier.matchParentSize().clickable { aExpanded = !aExpanded; aSearch = "" })
+                                DropdownMenu(
                                     expanded = aExpanded,
-                                    onDismissRequest = { aExpanded = false }
+                                    onDismissRequest = { aExpanded = false },
+                                    modifier = Modifier.heightIn(max = 300.dp)
                                 ) {
-                                    languages.forEach { lang ->
+                                    OutlinedTextField(
+                                        value = aSearch,
+                                        onValueChange = { aSearch = it },
+                                        placeholder = { Text("Search...", fontSize = 13.sp) },
+                                        modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
+                                        singleLine = true,
+                                        textStyle = LocalTextStyle.current.copy(fontSize = 13.sp)
+                                    )
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    aFiltered.forEach { lang ->
                                         DropdownMenuItem(
                                             text = { Text(langWithFlag(lang).ifBlank { "Not set" }) },
                                             onClick = {
                                                 answerLang = lang
                                                 aExpanded = false
+                                                aSearch = ""
                                             }
                                         )
                                     }
@@ -398,7 +430,7 @@ fun PackEditorScreen(
                     ) {
                         Column(modifier = Modifier.padding(12.dp)) {
                             Text(
-                                "One word per line: question|answer|reading",
+                                "One word per line: card|explanation|hint",
                                 fontSize = 12.sp,
                                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                             )
@@ -497,7 +529,7 @@ fun PackEditorScreen(
                                 updated[index] = updated[index].copy(question = it)
                                 words = updated
                             },
-                            label = { Text("Question") },
+                            label = { Text("Card") },
                             modifier = Modifier.fillMaxWidth(),
                             singleLine = true,
                             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
@@ -530,7 +562,7 @@ fun PackEditorScreen(
                                 updated[index] = updated[index].copy(answer = it)
                                 words = updated
                             },
-                            label = { Text("Answer") },
+                            label = { Text("Explanation") },
                             modifier = Modifier.fillMaxWidth(),
                             singleLine = true,
                             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
@@ -549,7 +581,7 @@ fun PackEditorScreen(
                                 updated[index] = updated[index].copy(reading = it)
                                 words = updated
                             },
-                            label = { Text("Reading (optional)") },
+                            label = { Text("Hint") },
                             modifier = Modifier.fillMaxWidth(),
                             singleLine = true,
                             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),

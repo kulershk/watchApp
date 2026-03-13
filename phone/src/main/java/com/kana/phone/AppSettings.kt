@@ -15,7 +15,7 @@ object AppSettings {
     private const val KEY_DISPLAY_NAME = "display_name"
 
     private const val DEFAULT_INTERVAL = 20
-    private const val DEFAULT_URL = "https://watch.osrs.lv/api/words/"
+    private val DEFAULT_URL = "${BuildConfig.API_BASE}/words/"
 
     fun getIntervalMinutes(context: Context): Int {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)

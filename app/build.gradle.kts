@@ -25,7 +25,15 @@ android {
     }
 
     buildTypes {
+        debug {
+            buildConfigField("String", "API_BASE", "\"http://10.0.2.2:3001/api\"")
+            buildConfigField("String", "AUDIO_BASE", "\"http://10.0.2.2:3001/api/audio/\"")
+            buildConfigField("String", "IMAGE_BASE", "\"http://10.0.2.2:3001/api/images/\"")
+        }
         release {
+            buildConfigField("String", "API_BASE", "\"https://watch.osrs.lv/api\"")
+            buildConfigField("String", "AUDIO_BASE", "\"https://watch.osrs.lv/api/audio/\"")
+            buildConfigField("String", "IMAGE_BASE", "\"https://watch.osrs.lv/api/images/\"")
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
@@ -45,6 +53,7 @@ android {
 
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 
     composeOptions {

@@ -19,7 +19,7 @@ object PackUpdater {
 
             for (pack in packs) {
                 try {
-                    val connection = URL("https://watch.osrs.lv/api/words/${pack.id}").openConnection() as HttpURLConnection
+                    val connection = URL("${BuildConfig.API_BASE}/words/${pack.id}").openConnection() as HttpURLConnection
                     connection.requestMethod = "GET"
                     connection.connectTimeout = 10000
                     connection.readTimeout = 10000
@@ -86,7 +86,7 @@ object PackUpdater {
 
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                val connection = URL("https://watch.osrs.lv/api/words/$id").openConnection() as HttpURLConnection
+                val connection = URL("${BuildConfig.API_BASE}/words/$id").openConnection() as HttpURLConnection
                 connection.requestMethod = "GET"
                 connection.connectTimeout = 10000
                 connection.readTimeout = 10000
@@ -150,7 +150,7 @@ object PackUpdater {
 
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                val connection = java.net.URL("https://watch.osrs.lv/api/packs/share/$code").openConnection() as HttpURLConnection
+                val connection = java.net.URL("${BuildConfig.API_BASE}/packs/share/$code").openConnection() as HttpURLConnection
                 connection.requestMethod = "GET"
                 connection.connectTimeout = 10000
                 connection.readTimeout = 10000
@@ -213,7 +213,7 @@ object PackUpdater {
 
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                val connection = URL("https://watch.osrs.lv/api/words/$id").openConnection() as HttpURLConnection
+                val connection = URL("${BuildConfig.API_BASE}/words/$id").openConnection() as HttpURLConnection
                 connection.requestMethod = "GET"
                 connection.connectTimeout = 10000
                 connection.readTimeout = 10000

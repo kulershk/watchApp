@@ -8,7 +8,7 @@ import java.net.URL
 
 object ImageCache {
 
-    private const val IMAGE_BASE = "https://watch.osrs.lv/api/images/"
+    private val IMAGE_BASE = BuildConfig.IMAGE_BASE
 
     private fun cacheDir(context: Context): File {
         val dir = File(context.cacheDir, "images")

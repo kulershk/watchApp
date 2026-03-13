@@ -31,7 +31,10 @@
       "Bash(adb -s R5CXC35YNAH logcat -d | grep -i \"kana\" | tail -30)",
       "Bash(./gradlew :phone:assembleDebug 2>&1 | tail -30)",
       "Bash(./gradlew :phone:assembleDebug 2>&1 | tail -40)",
-      "Bash(ls gradlew*)"
+      "Bash(ls gradlew*)",
+      "Bash(chmod +x /c/Users/kuler/Desktop/Stuff/watchWeb/scripts/sync-prod-db.sh)",
+      "Bash(docker exec:*)",
+      "Bash(docker restart:*)"
     ]
   }
 }

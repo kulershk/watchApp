@@ -15,9 +15,15 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.Help
+import androidx.compose.material.icons.filled.Key
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Stop
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.ArrowDropUp
+import androidx.compose.material.icons.filled.Verified
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -49,10 +55,12 @@ fun BrowsePacksScreen(
     var previewPack by remember { mutableStateOf<RemotePack?>(null) }
     var previewWords by remember { mutableStateOf<List<Word>>(emptyList()) }
     var previewLoading by remember { mutableStateOf(false) }
+    var verifiedOnly by remember { mutableStateOf(true) }
+    var showUnverifiedWarning by remember { mutableStateOf(false) }
 
     fun loadPacks() {
         loading = true
-        ApiClient.fetchPublicPacks(search = searchQuery, tag = selectedTag, questionLang = filterQuestionLang, answerLang = filterAnswerLang) { _, result ->
+        ApiClient.fetchPublicPacks(search = searchQuery, tag = selectedTag, questionLang = filterQuestionLang, answerLang = filterAnswerLang, verifiedOnly = verifiedOnly) { _, result ->
             packs = result
             loading = false
         }
@@ -64,11 +72,6 @@ fun BrowsePacksScreen(
         topBar = {
             TopAppBar(
                 title = { Text("Browse Packs") },
-                navigationIcon = {
-                    TextButton(onClick = onBack) {
-                        Text("\u2190 Back", color = MaterialTheme.colorScheme.onSurface)
-                    }
-                },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.surface,
                     titleContentColor = MaterialTheme.colorScheme.primary
@@ -82,15 +85,67 @@ fun BrowsePacksScreen(
                 .fillMaxSize()
                 .padding(padding)
         ) {
-            // Search bar
+            // Share code dialog
+            var showShareCodeDialog by remember { mutableStateOf(false) }
+            var shareCodeInput by remember { mutableStateOf("") }
+            var redeemingCode by remember { mutableStateOf(false) }
+
+            if (showShareCodeDialog) {
+                AlertDialog(
+                    onDismissRequest = { if (!redeemingCode) { showShareCodeDialog = false; shareCodeInput = "" } },
+                    title = { Text("Enter Share Code") },
+                    text = {
+                        OutlinedTextField(
+                            value = shareCodeInput,
+                            onValueChange = { shareCodeInput = it.take(8) },
+                            placeholder = { Text("8-character code") },
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    },
+                    confirmButton = {
+                        TextButton(
+                            onClick = {
+                                if (shareCodeInput.length == 8) {
+                                    redeemingCode = true
+                                    PackUpdater.redeemShareCode(context, shareCodeInput) { success, message ->
+                                        redeemingCode = false
+                                        Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+                                        if (success) {
+                                            showShareCodeDialog = false
+                                            shareCodeInput = ""
+                                        }
+                                    }
+                                } else {
+                                    Toast.makeText(context, "Code must be 8 characters", Toast.LENGTH_SHORT).show()
+                                }
+                            },
+                            enabled = shareCodeInput.length == 8 && !redeemingCode
+                        ) { Text(if (redeemingCode) "Downloading..." else "Redeem") }
+                    },
+                    dismissButton = {
+                        TextButton(
+                            onClick = { showShareCodeDialog = false; shareCodeInput = "" },
+                            enabled = !redeemingCode
+                        ) { Text("Cancel") }
+                    }
+                )
+            }
+
+            // Search bar + code button
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
             OutlinedTextField(
                 value = searchQuery,
                 onValueChange = { searchQuery = it },
                 placeholder = { Text("Search packs...") },
                 singleLine = true,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                modifier = Modifier.weight(1f),
                 trailingIcon = {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         if (searchQuery.isNotBlank()) {
@@ -111,6 +166,14 @@ fun BrowsePacksScreen(
                     cursorColor = MaterialTheme.colorScheme.primary
                 )
             )
+            OutlinedIconButton(
+                onClick = { showShareCodeDialog = true },
+                shape = RoundedCornerShape(8.dp),
+                modifier = Modifier.size(56.dp)
+            ) {
+                Icon(Icons.Filled.Key, contentDescription = "Enter share code")
+            }
+            }
 
             // Language filters
             Row(
@@ -122,18 +185,20 @@ fun BrowsePacksScreen(
                 val languages = languageList
 
                 var qExpanded by remember { mutableStateOf(false) }
-                ExposedDropdownMenuBox(
-                    expanded = qExpanded,
-                    onExpandedChange = { qExpanded = it },
-                    modifier = Modifier.weight(1f)
-                ) {
+                var qSearch by remember { mutableStateOf("") }
+                val qFiltered = if (qSearch.isBlank()) languages else languages.filter {
+                    langWithFlag(it).contains(qSearch, ignoreCase = true) || it.contains(qSearch, ignoreCase = true)
+                }
+                Box(modifier = Modifier.weight(1f)) {
                     OutlinedTextField(
                         value = langWithFlag(filterQuestionLang).ifBlank { "Any" },
                         onValueChange = {},
                         readOnly = true,
-                        label = { Text("Questions", fontSize = 12.sp) },
-                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = qExpanded) },
-                        modifier = Modifier.menuAnchor().fillMaxWidth(),
+                        label = { Text("Cards", fontSize = 12.sp) },
+                        trailingIcon = {
+                            Icon(if (qExpanded) Icons.Filled.ArrowDropUp else Icons.Filled.ArrowDropDown, contentDescription = null)
+                        },
+                        modifier = Modifier.fillMaxWidth(),
                         singleLine = true,
                         textStyle = LocalTextStyle.current.copy(fontSize = 13.sp),
                         colors = OutlinedTextFieldDefaults.colors(
@@ -141,16 +206,28 @@ fun BrowsePacksScreen(
                             cursorColor = MaterialTheme.colorScheme.primary
                         )
                     )
-                    ExposedDropdownMenu(
+                    Box(modifier = Modifier.matchParentSize().clickable { qExpanded = !qExpanded; qSearch = "" })
+                    DropdownMenu(
                         expanded = qExpanded,
-                        onDismissRequest = { qExpanded = false }
+                        onDismissRequest = { qExpanded = false },
+                        modifier = Modifier.heightIn(max = 300.dp)
                     ) {
-                        languages.forEach { lang ->
+                        OutlinedTextField(
+                            value = qSearch,
+                            onValueChange = { qSearch = it },
+                            placeholder = { Text("Search...", fontSize = 13.sp) },
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
+                            singleLine = true,
+                            textStyle = LocalTextStyle.current.copy(fontSize = 13.sp)
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        qFiltered.forEach { lang ->
                             DropdownMenuItem(
                                 text = { Text(langWithFlag(lang).ifBlank { "Any" }) },
                                 onClick = {
                                     filterQuestionLang = lang
                                     qExpanded = false
+                                    qSearch = ""
                                     loadPacks()
                                 }
                             )
@@ -159,18 +236,20 @@ fun BrowsePacksScreen(
                 }
 
                 var aExpanded by remember { mutableStateOf(false) }
-                ExposedDropdownMenuBox(
-                    expanded = aExpanded,
-                    onExpandedChange = { aExpanded = it },
-                    modifier = Modifier.weight(1f)
-                ) {
+                var aSearch by remember { mutableStateOf("") }
+                val aFiltered = if (aSearch.isBlank()) languages else languages.filter {
+                    langWithFlag(it).contains(aSearch, ignoreCase = true) || it.contains(aSearch, ignoreCase = true)
+                }
+                Box(modifier = Modifier.weight(1f)) {
                     OutlinedTextField(
                         value = langWithFlag(filterAnswerLang).ifBlank { "Any" },
                         onValueChange = {},
                         readOnly = true,
-                        label = { Text("Answers", fontSize = 12.sp) },
-                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = aExpanded) },
-                        modifier = Modifier.menuAnchor().fillMaxWidth(),
+                        label = { Text("Explanations", fontSize = 12.sp) },
+                        trailingIcon = {
+                            Icon(if (aExpanded) Icons.Filled.ArrowDropUp else Icons.Filled.ArrowDropDown, contentDescription = null)
+                        },
+                        modifier = Modifier.fillMaxWidth(),
                         singleLine = true,
                         textStyle = LocalTextStyle.current.copy(fontSize = 13.sp),
                         colors = OutlinedTextFieldDefaults.colors(
@@ -178,16 +257,28 @@ fun BrowsePacksScreen(
                             cursorColor = MaterialTheme.colorScheme.primary
                         )
                     )
-                    ExposedDropdownMenu(
+                    Box(modifier = Modifier.matchParentSize().clickable { aExpanded = !aExpanded; aSearch = "" })
+                    DropdownMenu(
                         expanded = aExpanded,
-                        onDismissRequest = { aExpanded = false }
+                        onDismissRequest = { aExpanded = false },
+                        modifier = Modifier.heightIn(max = 300.dp)
                     ) {
-                        languages.forEach { lang ->
+                        OutlinedTextField(
+                            value = aSearch,
+                            onValueChange = { aSearch = it },
+                            placeholder = { Text("Search...", fontSize = 13.sp) },
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
+                            singleLine = true,
+                            textStyle = LocalTextStyle.current.copy(fontSize = 13.sp)
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        aFiltered.forEach { lang ->
                             DropdownMenuItem(
                                 text = { Text(langWithFlag(lang).ifBlank { "Any" }) },
                                 onClick = {
                                     filterAnswerLang = lang
                                     aExpanded = false
+                                    aSearch = ""
                                     loadPacks()
                                 }
                             )
@@ -211,6 +302,47 @@ fun BrowsePacksScreen(
                         Text("Clear", fontSize = 12.sp)
                     }
                 }
+            }
+
+            // Verified only toggle
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 4.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text("Show verified only", fontSize = 14.sp)
+                Switch(
+                    checked = verifiedOnly,
+                    onCheckedChange = { checked ->
+                        if (!checked) {
+                            showUnverifiedWarning = true
+                        } else {
+                            verifiedOnly = true
+                            loadPacks()
+                        }
+                    }
+                )
+            }
+
+            // Unverified warning dialog
+            if (showUnverifiedWarning) {
+                AlertDialog(
+                    onDismissRequest = { showUnverifiedWarning = false },
+                    title = { Text("Show unverified packs?") },
+                    text = { Text("Unverified packs may contain inappropriate content. Use at your own risk.") },
+                    confirmButton = {
+                        TextButton(onClick = {
+                            showUnverifiedWarning = false
+                            verifiedOnly = false
+                            loadPacks()
+                        }) { Text("Show All") }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { showUnverifiedWarning = false }) { Text("Cancel") }
+                    }
+                )
             }
 
             if (loading) {
@@ -258,11 +390,17 @@ fun BrowsePacksScreen(
                                         verticalAlignment = Alignment.Top
                                     ) {
                                         Column(modifier = Modifier.weight(1f)) {
-                                            Text(
-                                                pack.name.ifBlank { "Unnamed" },
-                                                fontSize = 16.sp,
-                                                fontWeight = FontWeight.Bold
-                                            )
+                                            Row(
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                            ) {
+                                                Text(
+                                                    pack.name.ifBlank { "Unnamed" },
+                                                    fontSize = 16.sp,
+                                                    fontWeight = FontWeight.Bold
+                                                )
+                                                VerificationBadge(pack.verificationStatus)
+                                            }
                                             Text(
                                                 "${pack.wordCount} words",
                                                 fontSize = 13.sp,
@@ -590,5 +728,29 @@ fun BrowsePacksScreen(
                 }
             }
         }
+    }
+}
+
+@Composable
+fun VerificationBadge(status: String) {
+    when (status) {
+        "accepted" -> Icon(
+            Icons.Filled.Verified,
+            contentDescription = "Verified",
+            tint = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.size(16.dp)
+        )
+        "pending" -> Icon(
+            Icons.Filled.Schedule,
+            contentDescription = "Pending verification",
+            tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+            modifier = Modifier.size(16.dp)
+        )
+        "neutral" -> Icon(
+            Icons.Filled.Help,
+            contentDescription = "Unverified",
+            tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
+            modifier = Modifier.size(16.dp)
+        )
     }
 }

@@ -1,6 +1,7 @@
 package com.kana.watch
 
 import android.os.Bundle
+import com.kana.watch.BuildConfig
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -349,6 +350,15 @@ fun SettingsScreen(
                     color = MaterialTheme.colors.onSurface.copy(alpha = 0.3f),
                     textAlign = TextAlign.Center
                 )
+                if (BuildConfig.DEBUG) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        "DEV MODE — ${BuildConfig.API_BASE}",
+                        fontSize = 9.sp,
+                        color = Color.Red.copy(alpha = 0.7f),
+                        textAlign = TextAlign.Center
+                    )
+                }
             }
         }
     }

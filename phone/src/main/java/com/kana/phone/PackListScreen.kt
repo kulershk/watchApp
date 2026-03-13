@@ -7,7 +7,10 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Help
+import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.Verified
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -32,6 +35,7 @@ fun PackListScreen(
 
     var syncingIds by remember { mutableStateOf(setOf<String>()) }
     var enabledPacks by remember { mutableStateOf(AppSettings.getEnabledPacks(context)) }
+    var showEditWarningForPack by remember { mutableStateOf<RemotePack?>(null) }
 
     LaunchedEffect(Unit) {
         // Auto-sync all local packs (including downloaded from others)
@@ -69,11 +73,6 @@ fun PackListScreen(
         topBar = {
             TopAppBar(
                 title = { Text("Word Packs") },
-                navigationIcon = {
-                    TextButton(onClick = onBack) {
-                        Text("\u2190 Back", color = MaterialTheme.colorScheme.onSurface)
-                    }
-                },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.surface,
                     titleContentColor = MaterialTheme.colorScheme.primary
@@ -136,11 +135,19 @@ fun PackListScreen(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Column(modifier = Modifier.weight(1f)) {
-                                    Text(
-                                        pack.name.ifBlank { "Unnamed" },
-                                        fontSize = 16.sp,
-                                        fontWeight = FontWeight.Bold
-                                    )
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                    ) {
+                                        Text(
+                                            pack.name.ifBlank { "Unnamed" },
+                                            fontSize = 16.sp,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                        if (pack.isPublic) {
+                                            VerificationBadge(pack.verificationStatus)
+                                        }
+                                    }
                                     Text(
                                         "${pack.wordCount} words" + if (pack.downloadCount > 0) " \u2022 ${pack.downloadCount} downloads" else "",
                                         fontSize = 13.sp,
@@ -214,7 +221,11 @@ fun PackListScreen(
                                     FilledTonalButton(
                                         onClick = {
                                             if (isLocal) {
-                                                onEditPack(pack.id)
+                                                if (pack.isPublic && pack.verificationStatus in listOf("accepted", "neutral")) {
+                                                    showEditWarningForPack = pack
+                                                } else {
+                                                    onEditPack(pack.id)
+                                                }
                                             } else {
                                                 Toast.makeText(context, "Download the pack first to edit", Toast.LENGTH_SHORT).show()
                                             }
@@ -375,6 +386,25 @@ fun PackListScreen(
                     }
                 }
             }
+        }
+
+        // Edit warning dialog for verified/neutral public packs
+        if (showEditWarningForPack != null) {
+            val pack = showEditWarningForPack!!
+            AlertDialog(
+                onDismissRequest = { showEditWarningForPack = null },
+                title = { Text("Edit published pack?") },
+                text = { Text("Editing a published pack will reset its verification status to pending. Continue?") },
+                confirmButton = {
+                    TextButton(onClick = {
+                        showEditWarningForPack = null
+                        onEditPack(pack.id)
+                    }) { Text("Edit") }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showEditWarningForPack = null }) { Text("Cancel") }
+                }
+            )
         }
     }
 }

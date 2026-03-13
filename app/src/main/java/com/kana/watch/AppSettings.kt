@@ -12,8 +12,8 @@ object AppSettings {
     private const val KEY_SYNC_TOKEN = "sync_token"
 
     private const val DEFAULT_INTERVAL = 20
-    private const val DEFAULT_URL = "https://watch.osrs.lv/api/words/"
-    private const val DEFAULT_API_URL = "https://watch.osrs.lv/api"
+    private val DEFAULT_URL = "${BuildConfig.API_BASE}/words/"
+    private val DEFAULT_API_URL = BuildConfig.API_BASE
 
     fun getIntervalMinutes(context: Context): Int {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)

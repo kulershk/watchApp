@@ -19,6 +19,12 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Explore
+import androidx.compose.material.icons.filled.FolderOpen
+import androidx.compose.material.icons.filled.MenuBook
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -83,30 +89,32 @@ fun getRandomQuizItem(context: android.content.Context): QuizItem? {
     return QuizItem(item.question, item.answer, "WORD", item.reading, item.audioUrl, item.imageUrl)
 }
 
-enum class Screen { LOGIN, REGISTER, HOME, QUIZ, SETTINGS, PACK_LIST, PACK_EDITOR, BROWSE }
+enum class Screen { LOGIN, REGISTER, QUIZ, SETTINGS, PACK_LIST, PACK_EDITOR, BROWSE }
+enum class Tab { QUIZ, PACKS, BROWSE, SETTINGS }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AppContent(context: android.content.Context, initialQuiz: QuizItem?) {
     val startScreen = when {
         !AppSettings.isLoggedIn(context) -> Screen.LOGIN
         initialQuiz != null -> Screen.QUIZ
-        else -> Screen.HOME
+        else -> Screen.QUIZ
     }
     var currentScreen by remember { mutableStateOf(startScreen) }
-    var quizItem by remember { mutableStateOf(initialQuiz) }
+    var selectedTab by remember { mutableStateOf(Tab.QUIZ) }
+    var quizItem by remember { mutableStateOf(initialQuiz ?: getRandomQuizItem(context)) }
     var editId by remember { mutableStateOf<String?>(null) }
     var syncMessage by remember { mutableStateOf<String?>(null) }
     var updateAvailable by remember { mutableStateOf<String?>(null) }
+    val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(Unit) {
         PackUpdater.checkForUpdates(context) { syncedNames ->
             syncMessage = "Synced: ${syncedNames.joinToString(", ")}"
         }
-        // Push enabled packs to server for watch sync
         if (AppSettings.isLoggedIn(context)) {
             ApiClient.pushWatchSyncPacks(context, AppSettings.getEnabledPacks(context))
         }
-        // Check for app updates
         val currentVersion = try {
             context.packageManager.getPackageInfo(context.packageName, 0).versionName
         } catch (_: Exception) { null }
@@ -119,323 +127,133 @@ fun AppContent(context: android.content.Context, initialQuiz: QuizItem?) {
         }
     }
 
-    BackHandler {
-        when (currentScreen) {
-            Screen.HOME, Screen.LOGIN, Screen.REGISTER -> (context as? ComponentActivity)?.moveTaskToBack(true)
-            Screen.PACK_EDITOR -> currentScreen = Screen.PACK_LIST
-            else -> currentScreen = Screen.HOME
-        }
-    }
-
-    when (currentScreen) {
-        Screen.LOGIN -> LoginScreen(
-            onLoggedIn = { currentScreen = Screen.HOME },
-            onGoToRegister = { currentScreen = Screen.REGISTER }
-        )
-        Screen.REGISTER -> RegisterScreen(
-            onRegistered = { currentScreen = Screen.HOME },
-            onGoToLogin = { currentScreen = Screen.LOGIN }
-        )
-        Screen.HOME -> HomeScreen(
-            context = context,
-            syncMessage = syncMessage,
-            onSyncMessageDismissed = { syncMessage = null },
-            updateAvailable = updateAvailable,
-            onStartQuiz = {
-                val item = getRandomQuizItem(context)
-                if (item != null) {
-                    quizItem = item
-                    currentScreen = Screen.QUIZ
-                } else {
-                    Toast.makeText(context, "Nothing enabled! Check My Packs.", Toast.LENGTH_SHORT).show()
-                }
-            },
-            onPacks = { currentScreen = Screen.PACK_LIST },
-            onBrowse = { currentScreen = Screen.BROWSE },
-            onSettings = { currentScreen = Screen.SETTINGS }
-        )
-        Screen.QUIZ -> {
-            val item = quizItem
-            if (item != null) {
-                QuizScreen(
-                    character = item.character,
-                    romaji = item.romaji,
-                    type = item.type,
-                    reading = item.reading,
-                    audioUrl = item.audioUrl,
-                    imageUrl = item.imageUrl,
-                    onNext = {
-                        val next = getRandomQuizItem(context)
-                        if (next != null) {
-                            quizItem = next
-                        }
-                    },
-                    onBack = { currentScreen = Screen.HOME }
-                )
-            }
-        }
-        Screen.SETTINGS -> SettingsScreen(
-            onBack = { currentScreen = Screen.HOME },
-            onLogout = {
-                AppSettings.logout(context)
-                currentScreen = Screen.LOGIN
-            },
-            context = context
-        )
-        Screen.PACK_LIST -> PackListScreen(
-            onBack = { currentScreen = Screen.HOME },
-            onCreatePack = {
-                editId = null
-                currentScreen = Screen.PACK_EDITOR
-            },
-            onEditPack = { id ->
-                editId = id
-                currentScreen = Screen.PACK_EDITOR
-            },
-            context = context
-        )
-        Screen.BROWSE -> BrowsePacksScreen(
-            onBack = { currentScreen = Screen.HOME },
-            context = context
-        )
-        Screen.PACK_EDITOR -> PackEditorScreen(
-            editId = editId,
-            onBack = { currentScreen = Screen.PACK_LIST },
-            context = context
-        )
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun HomeScreen(
-    context: android.content.Context,
-    syncMessage: String? = null,
-    onSyncMessageDismissed: () -> Unit = {},
-    updateAvailable: String? = null,
-    onStartQuiz: () -> Unit,
-    onPacks: () -> Unit,
-    onBrowse: () -> Unit,
-    onSettings: () -> Unit
-) {
-    var isActive by remember { mutableStateOf(AppSettings.isNotificationsActive(context)) }
-    val intervalMinutes = remember { AppSettings.getIntervalMinutes(context) }
-    val snackbarHostState = remember { SnackbarHostState() }
-    var showShareCodeDialog by remember { mutableStateOf(false) }
-    var shareCodeInput by remember { mutableStateOf("") }
-    var redeemingCode by remember { mutableStateOf(false) }
-
     LaunchedEffect(syncMessage) {
         if (syncMessage != null) {
-            snackbarHostState.showSnackbar(syncMessage)
-            onSyncMessageDismissed()
+            snackbarHostState.showSnackbar(syncMessage!!)
+            syncMessage = null
         }
     }
 
-    if (showShareCodeDialog) {
-        AlertDialog(
-            onDismissRequest = { if (!redeemingCode) { showShareCodeDialog = false; shareCodeInput = "" } },
-            title = { Text("Enter Share Code") },
-            text = {
-                OutlinedTextField(
-                    value = shareCodeInput,
-                    onValueChange = { shareCodeInput = it.take(8) },
-                    placeholder = { Text("8-character code") },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
-                )
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        if (shareCodeInput.length == 8) {
-                            redeemingCode = true
-                            PackUpdater.redeemShareCode(context, shareCodeInput) { success, message ->
-                                redeemingCode = false
-                                Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
-                                if (success) {
-                                    showShareCodeDialog = false
-                                    shareCodeInput = ""
-                                }
-                            }
-                        } else {
-                            Toast.makeText(context, "Code must be 8 characters", Toast.LENGTH_SHORT).show()
-                        }
-                    },
-                    enabled = shareCodeInput.length == 8 && !redeemingCode
-                ) { Text(if (redeemingCode) "Downloading..." else "Redeem") }
-            },
-            dismissButton = {
-                TextButton(
-                    onClick = { showShareCodeDialog = false; shareCodeInput = "" },
-                    enabled = !redeemingCode
-                ) { Text("Cancel") }
-            }
-        )
+    // Full-screen flows without bottom nav
+    when (currentScreen) {
+        Screen.LOGIN -> {
+            BackHandler { (context as? ComponentActivity)?.moveTaskToBack(true) }
+            LoginScreen(
+                onLoggedIn = { currentScreen = Screen.QUIZ },
+                onGoToRegister = { currentScreen = Screen.REGISTER }
+            )
+            return
+        }
+        Screen.REGISTER -> {
+            BackHandler { currentScreen = Screen.LOGIN }
+            RegisterScreen(
+                onRegistered = { currentScreen = Screen.QUIZ },
+                onGoToLogin = { currentScreen = Screen.LOGIN }
+            )
+            return
+        }
+        Screen.PACK_EDITOR -> {
+            BackHandler { currentScreen = Screen.PACK_LIST; selectedTab = Tab.PACKS }
+            PackEditorScreen(
+                editId = editId,
+                onBack = { currentScreen = Screen.PACK_LIST; selectedTab = Tab.PACKS },
+                context = context
+            )
+            return
+        }
+        else -> {}
     }
 
+    // Main app with bottom navigation
+    BackHandler { (context as? ComponentActivity)?.moveTaskToBack(true) }
+
     Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text("Language Learning", fontWeight = FontWeight.Bold)
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    titleContentColor = MaterialTheme.colorScheme.primary
-                )
-            )
-        },
         snackbarHost = { SnackbarHost(snackbarHostState) },
+        bottomBar = {
+            NavigationBar {
+                NavigationBarItem(
+                    selected = selectedTab == Tab.QUIZ,
+                    onClick = { selectedTab = Tab.QUIZ; currentScreen = Screen.QUIZ },
+                    icon = { Icon(Icons.Filled.PlayArrow, contentDescription = "Quiz") }
+                )
+                NavigationBarItem(
+                    selected = selectedTab == Tab.PACKS,
+                    onClick = { selectedTab = Tab.PACKS; currentScreen = Screen.PACK_LIST },
+                    icon = { Icon(Icons.Filled.FolderOpen, contentDescription = "My Packs") }
+                )
+                NavigationBarItem(
+                    selected = selectedTab == Tab.BROWSE,
+                    onClick = { selectedTab = Tab.BROWSE; currentScreen = Screen.BROWSE },
+                    icon = { Icon(Icons.Filled.Explore, contentDescription = "Browse") }
+                )
+                NavigationBarItem(
+                    selected = selectedTab == Tab.SETTINGS,
+                    onClick = { selectedTab = Tab.SETTINGS; currentScreen = Screen.SETTINGS },
+                    icon = { Icon(Icons.Filled.Settings, contentDescription = "Settings") }
+                )
+            }
+        },
         containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .padding(24.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            if (updateAvailable != null) {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.primaryContainer
-                    ),
-                    shape = RoundedCornerShape(8.dp)
-                ) {
-                    Row(
-                        modifier = Modifier.padding(12.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                "Update available",
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer
-                            )
-                            Text(
-                                "Version $updateAvailable is available",
-                                fontSize = 12.sp,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
-                            )
-                        }
-                        Button(
-                            onClick = {
-                                try {
-                                    val intent = android.content.Intent(
-                                        android.content.Intent.ACTION_VIEW,
-                                        android.net.Uri.parse("market://details?id=${context.packageName}")
-                                    )
-                                    context.startActivity(intent)
-                                } catch (_: Exception) {
-                                    val intent = android.content.Intent(
-                                        android.content.Intent.ACTION_VIEW,
-                                        android.net.Uri.parse("https://play.google.com/store/apps/details?id=${context.packageName}")
-                                    )
-                                    context.startActivity(intent)
+        Box(modifier = Modifier.padding(padding)) {
+            when (selectedTab) {
+                Tab.QUIZ -> {
+                    val item = quizItem
+                    if (item != null) {
+                        QuizScreen(
+                            character = item.character,
+                            romaji = item.romaji,
+                            type = item.type,
+                            reading = item.reading,
+                            audioUrl = item.audioUrl,
+                            imageUrl = item.imageUrl,
+                            onNext = {
+                                val next = getRandomQuizItem(context)
+                                if (next != null) {
+                                    quizItem = next
                                 }
                             },
-                            shape = RoundedCornerShape(8.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = MaterialTheme.colorScheme.primary
-                            )
+                            onBack = { (context as? ComponentActivity)?.moveTaskToBack(true) }
+                        )
+                    } else {
+                        Column(
+                            modifier = Modifier.fillMaxSize(),
+                            verticalArrangement = Arrangement.Center,
+                            horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-                            Text("Update", fontSize = 13.sp)
+                            Text("No packs enabled", fontSize = 18.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f))
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Button(onClick = { selectedTab = Tab.PACKS; currentScreen = Screen.PACK_LIST }) {
+                                Text("Go to My Packs")
+                            }
                         }
                     }
                 }
-            }
-            Button(
-                onClick = onStartQuiz,
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(8.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.secondary
+                Tab.PACKS -> PackListScreen(
+                    onBack = { (context as? ComponentActivity)?.moveTaskToBack(true) },
+                    onCreatePack = {
+                        editId = null
+                        currentScreen = Screen.PACK_EDITOR
+                    },
+                    onEditPack = { id ->
+                        editId = id
+                        currentScreen = Screen.PACK_EDITOR
+                    },
+                    context = context
                 )
-            ) {
-                Text("Start Quiz", fontSize = 18.sp, modifier = Modifier.padding(8.dp))
-            }
-
-            Button(
-                onClick = onPacks,
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(8.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.surface
+                Tab.BROWSE -> BrowsePacksScreen(
+                    onBack = { (context as? ComponentActivity)?.moveTaskToBack(true) },
+                    context = context
                 )
-            ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("My Packs", fontSize = 16.sp,
-                        color = MaterialTheme.colorScheme.onSurface)
-                    Text("Create & edit", fontSize = 12.sp,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
-                }
-            }
-
-            Button(
-                onClick = onBrowse,
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(8.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.surface
+                Tab.SETTINGS -> SettingsScreen(
+                    onBack = { (context as? ComponentActivity)?.moveTaskToBack(true) },
+                    onLogout = {
+                        AppSettings.logout(context)
+                        currentScreen = Screen.LOGIN
+                    },
+                    context = context,
+                    updateAvailable = updateAvailable
                 )
-            ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("Browse Packs", fontSize = 16.sp,
-                        color = MaterialTheme.colorScheme.onSurface)
-                    Text("Public packs from others", fontSize = 12.sp,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
-                }
-            }
-
-            OutlinedButton(
-                onClick = { showShareCodeDialog = true },
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(8.dp)
-            ) {
-                Text("Redeem Share Code", fontSize = 16.sp)
-            }
-
-            Button(
-                onClick = {
-                    isActive = !isActive
-                    if (isActive) {
-                        NotificationScheduler.schedule(context, AppSettings.getIntervalMinutes(context))
-                    } else {
-                        NotificationScheduler.cancel(context)
-                    }
-                },
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(8.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = if (isActive)
-                        MaterialTheme.colorScheme.error
-                    else
-                        MaterialTheme.colorScheme.primary
-                )
-            ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(
-                        if (isActive) "Stop Reminders" else "Start Reminders",
-                        fontSize = 16.sp, modifier = Modifier.padding(4.dp)
-                    )
-                    Text(
-                        if (isActive) "Every $intervalMinutes min" else "Tap to enable",
-                        fontSize = 12.sp
-                    )
-                }
-            }
-
-            OutlinedButton(
-                onClick = onSettings,
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(8.dp)
-            ) {
-                Text("Settings", fontSize = 16.sp)
             }
         }
     }
@@ -536,14 +354,17 @@ fun QuizScreen(
                             Text("Hint")
                         }
                     }
-                    Button(
+                    IconButton(
                         onClick = { revealed = true },
-                        shape = RoundedCornerShape(8.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.primary
-                        )
+                        modifier = Modifier
+                            .size(48.dp)
+                            .background(MaterialTheme.colorScheme.primary, RoundedCornerShape(8.dp))
                     ) {
-                        Text("Show Answer")
+                        Icon(
+                            Icons.Filled.MenuBook,
+                            contentDescription = "Show explanation",
+                            tint = MaterialTheme.colorScheme.onPrimary
+                        )
                     }
                 }
             } else {
@@ -574,20 +395,17 @@ fun QuizScreen(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsScreen(onBack: () -> Unit, onLogout: () -> Unit, context: android.content.Context) {
+fun SettingsScreen(onBack: () -> Unit, onLogout: () -> Unit, context: android.content.Context, updateAvailable: String? = null) {
     val presets = listOf(5, 10, 15, 20, 30, 45, 60, 90, 120)
     var selectedIndex by remember {
         mutableStateOf(presets.indexOf(AppSettings.getIntervalMinutes(context)).coerceAtLeast(0))
     }
+    var isActive by remember { mutableStateOf(AppSettings.isNotificationsActive(context)) }
+
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text("Settings") },
-                navigationIcon = {
-                    TextButton(onClick = onBack) {
-                        Text("\u2190 Back", color = MaterialTheme.colorScheme.onSurface)
-                    }
-                },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.surface,
                     titleContentColor = MaterialTheme.colorScheme.primary
@@ -596,16 +414,115 @@ fun SettingsScreen(onBack: () -> Unit, onLogout: () -> Unit, context: android.co
         },
         containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .padding(horizontal = 24.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(padding)
+            .padding(horizontal = 24.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        // Update banner
+        if (updateAvailable != null) {
             item {
                 Spacer(modifier = Modifier.height(8.dp))
-                Text(
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.primaryContainer
+                    ),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                "Update available",
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
+                            Text(
+                                "Version $updateAvailable is available",
+                                fontSize = 12.sp,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+                            )
+                        }
+                        Button(
+                            onClick = {
+                                try {
+                                    val intent = android.content.Intent(
+                                        android.content.Intent.ACTION_VIEW,
+                                        android.net.Uri.parse("market://details?id=${context.packageName}")
+                                    )
+                                    context.startActivity(intent)
+                                } catch (_: Exception) {
+                                    val intent = android.content.Intent(
+                                        android.content.Intent.ACTION_VIEW,
+                                        android.net.Uri.parse("https://play.google.com/store/apps/details?id=${context.packageName}")
+                                    )
+                                    context.startActivity(intent)
+                                }
+                            },
+                            shape = RoundedCornerShape(8.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.primary
+                            )
+                        ) {
+                            Text("Update", fontSize = 13.sp)
+                        }
+                    }
+                }
+            }
+        }
+
+        // Reminders
+        item {
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                "Reminders",
+                fontSize = 14.sp,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+            )
+        }
+
+        item {
+            Button(
+                onClick = {
+                    isActive = !isActive
+                    if (isActive) {
+                        NotificationScheduler.schedule(context, AppSettings.getIntervalMinutes(context))
+                    } else {
+                        NotificationScheduler.cancel(context)
+                    }
+                },
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(8.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = if (isActive)
+                        MaterialTheme.colorScheme.error
+                    else
+                        MaterialTheme.colorScheme.primary
+                )
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        if (isActive) "Stop Reminders" else "Start Reminders",
+                        fontSize = 16.sp, modifier = Modifier.padding(4.dp)
+                    )
+                    Text(
+                        if (isActive) "Every ${presets[selectedIndex]} min" else "Tap to enable",
+                        fontSize = 12.sp
+                    )
+                }
+            }
+        }
+
+        item {
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
                     "Notification Interval",
                     fontSize = 14.sp,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
@@ -684,7 +601,7 @@ fun SettingsScreen(onBack: () -> Unit, onLogout: () -> Unit, context: android.co
                     )
                 ) {
                     Column(
-                        modifier = Modifier.padding(16.dp),
+                        modifier = Modifier.fillMaxWidth().padding(16.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         if (pairCode != null) {
@@ -810,6 +727,16 @@ fun SettingsScreen(onBack: () -> Unit, onLogout: () -> Unit, context: android.co
                     modifier = Modifier.fillMaxWidth(),
                     textAlign = TextAlign.Center
                 )
+                if (BuildConfig.DEBUG) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        "DEV MODE — ${BuildConfig.API_BASE}",
+                        fontSize = 11.sp,
+                        color = MaterialTheme.colorScheme.error.copy(alpha = 0.7f),
+                        modifier = Modifier.fillMaxWidth(),
+                        textAlign = TextAlign.Center
+                    )
+                }
                 Spacer(modifier = Modifier.height(16.dp))
             }
         }

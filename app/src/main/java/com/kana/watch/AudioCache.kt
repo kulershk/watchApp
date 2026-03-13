@@ -8,7 +8,7 @@ import java.net.URL
 
 object AudioCache {
 
-    private const val AUDIO_BASE = "https://watch.osrs.lv/api/audio/"
+    private val AUDIO_BASE = BuildConfig.AUDIO_BASE
 
     private fun cacheDir(context: Context): File {
         val dir = File(context.cacheDir, "audio")

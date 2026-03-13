@@ -23,7 +23,8 @@ data class RemotePack(
     val downloadCount: Int = 0,
     val isOwner: Boolean = true,
     val avgRating: Float = 0f,
-    val ratingCount: Int = 0
+    val ratingCount: Int = 0,
+    val verificationStatus: String = "none"
 )
 
 data class Collaborator(
@@ -48,12 +49,13 @@ data class EditPack(
     val isPublic: Boolean = false,
     val tags: String = "",
     val questionLang: String = "",
-    val answerLang: String = ""
+    val answerLang: String = "",
+    val verificationStatus: String = "none"
 )
 
 object ApiClient {
 
-    private const val BASE = "https://watch.osrs.lv/api"
+    private val BASE = BuildConfig.API_BASE
 
     private fun addAuth(connection: HttpURLConnection, context: Context) {
         val token = AppSettings.getAuthToken(context)
@@ -306,7 +308,8 @@ object ApiClient {
                                 questionLang = obj.optString("question_lang", ""),
                                 answerLang = obj.optString("answer_lang", ""),
                                 downloadCount = obj.optInt("download_count", 0),
-                                isOwner = obj.optBoolean("is_owner", true)
+                                isOwner = obj.optBoolean("is_owner", true),
+                                verificationStatus = obj.optString("verification_status", "none")
                             )
                         )
                     }
@@ -321,7 +324,7 @@ object ApiClient {
         }
     }
 
-    fun fetchPublicPacks(search: String = "", tag: String = "", questionLang: String = "", answerLang: String = "", onResult: (Boolean, List<RemotePack>) -> Unit) {
+    fun fetchPublicPacks(search: String = "", tag: String = "", questionLang: String = "", answerLang: String = "", verifiedOnly: Boolean = true, onResult: (Boolean, List<RemotePack>) -> Unit) {
         CoroutineScope(Dispatchers.IO).launch {
             try {
                 val params = mutableListOf<String>()
@@ -329,6 +332,7 @@ object ApiClient {
                 if (tag.isNotBlank()) params.add("tag=${java.net.URLEncoder.encode(tag, "UTF-8")}")
                 if (questionLang.isNotBlank()) params.add("question_lang=${java.net.URLEncoder.encode(questionLang, "UTF-8")}")
                 if (answerLang.isNotBlank()) params.add("answer_lang=${java.net.URLEncoder.encode(answerLang, "UTF-8")}")
+                if (!verifiedOnly) params.add("verified_only=false")
                 val queryString = if (params.isNotEmpty()) "?${params.joinToString("&")}" else ""
 
                 val connection = URL("$BASE/packs/browse$queryString").openConnection() as HttpURLConnection
@@ -355,7 +359,8 @@ object ApiClient {
                                 answerLang = obj.optString("answer_lang", ""),
                                 downloadCount = obj.optInt("download_count", 0),
                                 avgRating = obj.optDouble("avg_rating", 0.0).toFloat(),
-                                ratingCount = obj.optInt("rating_count", 0)
+                                ratingCount = obj.optInt("rating_count", 0),
+                                verificationStatus = obj.optString("verification_status", "none")
                             )
                         )
                     }
@@ -466,9 +471,10 @@ object ApiClient {
                     val packTags = obj.optString("tags", "")
                     val questionLang = obj.optString("question_lang", "")
                     val answerLang = obj.optString("answer_lang", "")
+                    val verificationStatus = obj.optString("verification_status", "none")
 
                     withContext(Dispatchers.Main) {
-                        onResult(true, EditPack(id, name, words, isPublic, packTags, questionLang, answerLang))
+                        onResult(true, EditPack(id, name, words, isPublic, packTags, questionLang, answerLang, verificationStatus))
                     }
                 } else {
                     withContext(Dispatchers.Main) { onResult(false, null) }
@@ -717,16 +723,20 @@ object ApiClient {
                 body.put("rating", rating)
                 OutputStreamWriter(connection.outputStream).use { it.write(body.toString()) }
 
-                if (connection.responseCode == HttpURLConnection.HTTP_OK) {
+                val code = connection.responseCode
+                if (code == HttpURLConnection.HTTP_OK) {
                     val json = connection.inputStream.bufferedReader().readText()
                     val obj = JSONObject(json)
                     val avgRating = obj.optDouble("avg_rating", 0.0).toFloat()
                     val ratingCount = obj.optInt("rating_count", 0)
                     withContext(Dispatchers.Main) { onResult(true, avgRating, ratingCount) }
                 } else {
+                    val err = connection.errorStream?.bufferedReader()?.readText() ?: "no body"
+                    android.util.Log.e("ApiClient", "ratePack failed: $code $err")
                     withContext(Dispatchers.Main) { onResult(false, 0f, 0) }
                 }
-            } catch (_: Exception) {
+            } catch (e: Exception) {
+                android.util.Log.e("ApiClient", "ratePack exception", e)
                 withContext(Dispatchers.Main) { onResult(false, 0f, 0) }
             }
         }
