@@ -34,7 +34,10 @@
       "Bash(ls gradlew*)",
       "Bash(chmod +x /c/Users/kuler/Desktop/Stuff/watchWeb/scripts/sync-prod-db.sh)",
       "Bash(docker exec:*)",
-      "Bash(docker restart:*)"
+      "Bash(docker restart:*)",
+      "Bash(cd \"C:\\\\Users\\\\kuler\\\\Desktop\\\\Stuff\\\\watch\" && node -e \"\nconst text = require\\('fs'\\).readFileSync\\('phone/src/main/java/com/kana/phone/BrowsePacksScreen.kt','utf8'\\);\nlet total = 0;\nfor \\(const c of text\\) { if \\(c==='{'\\) total++; else if \\(c==='}'\\) total--; }\nconsole.log\\('Brace balance:', total\\);\nconsole.log\\('Total lines:', text.split\\('\\\\n'\\).length\\);\n\")",
+      "Bash(cd \"C:\\\\Users\\\\kuler\\\\Desktop\\\\Stuff\\\\watch\" && node -e \"\nconst text = require\\('fs'\\).readFileSync\\('phone/src/main/java/com/kana/phone/MainActivity.kt','utf8'\\);\nlet total = 0;\nfor \\(const c of text\\) { if \\(c==='{'\\) total++; else if \\(c==='}'\\) total--; }\nconsole.log\\('Brace balance:', total\\);\n\")",
+      "Bash(cd \"C:\\\\Users\\\\kuler\\\\Desktop\\\\Stuff\\\\watch\" && node -e \"\n['phone/src/main/java/com/kana/phone/PackListScreen.kt', 'phone/src/main/java/com/kana/phone/BrowsePacksScreen.kt', 'phone/src/main/java/com/kana/phone/PackPreviewDialog.kt'].forEach\\(f => {\n  const text = require\\('fs'\\).readFileSync\\(f, 'utf8'\\);\n  let total = 0;\n  for \\(const c of text\\) { if \\(c==='{'\\) total++; else if \\(c==='}'\\) total--; }\n  console.log\\(f.split\\('/'\\).pop\\(\\), 'brace balance:', total\\);\n}\\);\n\")"
     ]
   }
 }

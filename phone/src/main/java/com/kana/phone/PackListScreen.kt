@@ -36,6 +36,9 @@ fun PackListScreen(
     var syncingIds by remember { mutableStateOf(setOf<String>()) }
     var enabledPacks by remember { mutableStateOf(AppSettings.getEnabledPacks(context)) }
     var showEditWarningForPack by remember { mutableStateOf<RemotePack?>(null) }
+    var previewPack by remember { mutableStateOf<RemotePack?>(null) }
+    var previewWords by remember { mutableStateOf<List<Word>>(emptyList()) }
+    var previewLoading by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         // Auto-sync all local packs (including downloaded from others)
@@ -70,15 +73,6 @@ fun PackListScreen(
     val downloadedOnly = localPacks.filter { it.id !in remoteIds }
 
     Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Word Packs") },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    titleContentColor = MaterialTheme.colorScheme.primary
-                )
-            )
-        },
         floatingActionButton = {
             FloatingActionButton(
                 onClick = onCreatePack,
@@ -122,6 +116,15 @@ fun PackListScreen(
                     val isSyncing = pack.id in syncingIds
 
                     Card(
+                        onClick = {
+                            previewPack = pack
+                            previewLoading = true
+                            previewWords = emptyList()
+                            ApiClient.fetchPackPreview(pack.id) { success, words ->
+                                previewLoading = false
+                                if (success) previewWords = words
+                            }
+                        },
                         modifier = Modifier.fillMaxWidth(),
                         colors = CardDefaults.cardColors(
                             containerColor = MaterialTheme.colorScheme.surface
@@ -312,6 +315,18 @@ fun PackListScreen(
 
                     items(downloadedOnly, key = { "local_${it.id}" }) { pack ->
                         Card(
+                            onClick = {
+                                previewPack = RemotePack(
+                                    id = pack.id,
+                                    name = pack.name,
+                                    wordCount = pack.words.size,
+                                    updatedAt = pack.updated,
+                                    questionLang = pack.questionLang,
+                                    answerLang = pack.answerLang
+                                )
+                                previewLoading = false
+                                previewWords = pack.words
+                            },
                             modifier = Modifier.fillMaxWidth(),
                             colors = CardDefaults.cardColors(
                                 containerColor = MaterialTheme.colorScheme.surface
@@ -404,6 +419,16 @@ fun PackListScreen(
                 dismissButton = {
                     TextButton(onClick = { showEditWarningForPack = null }) { Text("Cancel") }
                 }
+            )
+        }
+
+        if (previewPack != null) {
+            PackPreviewDialog(
+                pack = previewPack!!,
+                words = previewWords,
+                loading = previewLoading,
+                context = context,
+                onDismiss = { previewPack = null }
             )
         }
     }

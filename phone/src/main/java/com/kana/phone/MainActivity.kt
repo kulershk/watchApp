@@ -195,7 +195,60 @@ fun AppContent(context: android.content.Context, initialQuiz: QuizItem?) {
         },
         containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
-        Box(modifier = Modifier.padding(padding)) {
+        Column(modifier = Modifier.padding(padding)) {
+            if (updateAvailable != null) {
+                Card(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.primaryContainer
+                    ),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                "Update available",
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
+                            Text(
+                                "Version $updateAvailable",
+                                fontSize = 12.sp,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+                            )
+                        }
+                        Button(
+                            onClick = {
+                                try {
+                                    val intent = android.content.Intent(
+                                        android.content.Intent.ACTION_VIEW,
+                                        android.net.Uri.parse("market://details?id=${context.packageName}")
+                                    )
+                                    context.startActivity(intent)
+                                } catch (_: Exception) {
+                                    val intent = android.content.Intent(
+                                        android.content.Intent.ACTION_VIEW,
+                                        android.net.Uri.parse("https://play.google.com/store/apps/details?id=${context.packageName}")
+                                    )
+                                    context.startActivity(intent)
+                                }
+                            },
+                            shape = RoundedCornerShape(8.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.primary
+                            )
+                        ) {
+                            Text("Update", fontSize = 13.sp)
+                        }
+                    }
+                }
+            }
+            Box(modifier = Modifier.weight(1f)) {
             when (selectedTab) {
                 Tab.QUIZ -> {
                     val item = quizItem
@@ -251,9 +304,9 @@ fun AppContent(context: android.content.Context, initialQuiz: QuizItem?) {
                         AppSettings.logout(context)
                         currentScreen = Screen.LOGIN
                     },
-                    context = context,
-                    updateAvailable = updateAvailable
+                    context = context
                 )
+            }
             }
         }
     }
@@ -395,89 +448,19 @@ fun QuizScreen(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsScreen(onBack: () -> Unit, onLogout: () -> Unit, context: android.content.Context, updateAvailable: String? = null) {
+fun SettingsScreen(onBack: () -> Unit, onLogout: () -> Unit, context: android.content.Context) {
     val presets = listOf(5, 10, 15, 20, 30, 45, 60, 90, 120)
     var selectedIndex by remember {
         mutableStateOf(presets.indexOf(AppSettings.getIntervalMinutes(context)).coerceAtLeast(0))
     }
     var isActive by remember { mutableStateOf(AppSettings.isNotificationsActive(context)) }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Settings") },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    titleContentColor = MaterialTheme.colorScheme.primary
-                )
-            )
-        },
-        containerColor = MaterialTheme.colorScheme.background
-    ) { padding ->
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
-            .padding(padding)
             .padding(horizontal = 24.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        // Update banner
-        if (updateAvailable != null) {
-            item {
-                Spacer(modifier = Modifier.height(8.dp))
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.primaryContainer
-                    ),
-                    shape = RoundedCornerShape(8.dp)
-                ) {
-                    Row(
-                        modifier = Modifier.padding(12.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                "Update available",
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer
-                            )
-                            Text(
-                                "Version $updateAvailable is available",
-                                fontSize = 12.sp,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
-                            )
-                        }
-                        Button(
-                            onClick = {
-                                try {
-                                    val intent = android.content.Intent(
-                                        android.content.Intent.ACTION_VIEW,
-                                        android.net.Uri.parse("market://details?id=${context.packageName}")
-                                    )
-                                    context.startActivity(intent)
-                                } catch (_: Exception) {
-                                    val intent = android.content.Intent(
-                                        android.content.Intent.ACTION_VIEW,
-                                        android.net.Uri.parse("https://play.google.com/store/apps/details?id=${context.packageName}")
-                                    )
-                                    context.startActivity(intent)
-                                }
-                            },
-                            shape = RoundedCornerShape(8.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = MaterialTheme.colorScheme.primary
-                            )
-                        ) {
-                            Text("Update", fontSize = 13.sp)
-                        }
-                    }
-                }
-            }
-        }
-
         // Reminders
         item {
             Spacer(modifier = Modifier.height(8.dp))
@@ -741,4 +724,4 @@ fun SettingsScreen(onBack: () -> Unit, onLogout: () -> Unit, context: android.co
             }
         }
     }
-}
+
