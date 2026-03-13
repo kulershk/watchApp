@@ -72,28 +72,17 @@ fun PackListScreen(
     val remoteIds = packs.map { it.id }.toSet()
     val downloadedOnly = localPacks.filter { it.id !in remoteIds }
 
-    Scaffold(
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = onCreatePack,
-                containerColor = MaterialTheme.colorScheme.primary,
-                shape = RoundedCornerShape(8.dp)
-            ) {
-                Text("+", fontSize = 24.sp, color = MaterialTheme.colorScheme.onPrimary)
-            }
-        },
-        containerColor = MaterialTheme.colorScheme.background
-    ) { padding ->
+    Box(modifier = Modifier.fillMaxSize()) {
         if (loading) {
             Box(
-                modifier = Modifier.fillMaxSize().padding(padding),
+                modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
             ) {
                 CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
             }
         } else if (packs.isEmpty() && downloadedOnly.isEmpty()) {
             Box(
-                modifier = Modifier.fillMaxSize().padding(padding),
+                modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -107,7 +96,7 @@ fun PackListScreen(
             }
         } else {
             LazyColumn(
-                modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 16.dp),
+                modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
                 contentPadding = PaddingValues(vertical = 8.dp)
             ) {
@@ -420,6 +409,18 @@ fun PackListScreen(
                     TextButton(onClick = { showEditWarningForPack = null }) { Text("Cancel") }
                 }
             )
+        }
+
+        // FAB
+        FloatingActionButton(
+            onClick = onCreatePack,
+            containerColor = MaterialTheme.colorScheme.primary,
+            shape = RoundedCornerShape(8.dp),
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(16.dp)
+        ) {
+            Text("+", fontSize = 24.sp, color = MaterialTheme.colorScheme.onPrimary)
         }
 
         if (previewPack != null) {

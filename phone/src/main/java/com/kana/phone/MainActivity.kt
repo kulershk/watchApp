@@ -170,7 +170,7 @@ fun AppContent(context: android.content.Context, initialQuiz: QuizItem?) {
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         bottomBar = {
-            NavigationBar {
+            NavigationBar(modifier = Modifier.height(56.dp)) {
                 NavigationBarItem(
                     selected = selectedTab == Tab.QUIZ,
                     onClick = { selectedTab = Tab.QUIZ; currentScreen = Screen.QUIZ },
