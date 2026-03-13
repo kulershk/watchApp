@@ -54,6 +54,10 @@ object PackUpdater {
                                 )
                             }
 
+                            val tags = jsonObj.optString("tags", "")
+                            val verStatus = jsonObj.optString("verification_status", "none")
+                            val avgRating = jsonObj.optDouble("avg_rating", 0.0).toFloat()
+                            val ratingCount = jsonObj.optInt("rating_count", 0)
                             val updated = WordPack(
                                 id = pack.id,
                                 name = name,
@@ -62,7 +66,11 @@ object PackUpdater {
                                 questionLang = qLang,
                                 answerLang = aLang,
                                 author = author,
-                                downloadCount = dlCount
+                                downloadCount = dlCount,
+                                tags = tags,
+                                verificationStatus = verStatus,
+                                avgRating = avgRating,
+                                ratingCount = ratingCount
                             )
                             WordStorage.savePack(context, updated)
                             AudioCache.downloadPackAudio(context, words)
@@ -120,7 +128,11 @@ object PackUpdater {
                         )
                     }
 
-                    val pack = WordPack(id = id, name = name, updated = updated, words = words, questionLang = qLang, answerLang = aLang, author = author, downloadCount = dlCount)
+                    val tags = jsonObj.optString("tags", "")
+                    val verStatus = jsonObj.optString("verification_status", "none")
+                    val avgRating = jsonObj.optDouble("avg_rating", 0.0).toFloat()
+                    val ratingCount = jsonObj.optInt("rating_count", 0)
+                    val pack = WordPack(id = id, name = name, updated = updated, words = words, questionLang = qLang, answerLang = aLang, author = author, downloadCount = dlCount, tags = tags, verificationStatus = verStatus, avgRating = avgRating, ratingCount = ratingCount)
                     WordStorage.savePack(context, pack)
                     AudioCache.downloadPackAudio(context, words)
                     ImageCache.downloadPackImages(context, words)
@@ -185,7 +197,11 @@ object PackUpdater {
                         )
                     }
 
-                    val pack = WordPack(id = id, name = name, updated = updated, words = words, questionLang = qLang, answerLang = aLang, author = author, downloadCount = dlCount)
+                    val tags = jsonObj.optString("tags", "")
+                    val verStatus = jsonObj.optString("verification_status", "none")
+                    val avgRating = jsonObj.optDouble("avg_rating", 0.0).toFloat()
+                    val ratingCount = jsonObj.optInt("rating_count", 0)
+                    val pack = WordPack(id = id, name = name, updated = updated, words = words, questionLang = qLang, answerLang = aLang, author = author, downloadCount = dlCount, tags = tags, verificationStatus = verStatus, avgRating = avgRating, ratingCount = ratingCount)
                     WordStorage.savePack(context, pack)
                     AudioCache.downloadPackAudio(context, words)
                     ImageCache.downloadPackImages(context, words)
@@ -247,7 +263,11 @@ object PackUpdater {
                         )
                     }
 
-                    val pack = WordPack(id = id, name = name, updated = updated, words = words, questionLang = qLang, answerLang = aLang, author = author, downloadCount = dlCount)
+                    val tags = jsonObj.optString("tags", "")
+                    val verStatus = jsonObj.optString("verification_status", "none")
+                    val avgRating = jsonObj.optDouble("avg_rating", 0.0).toFloat()
+                    val ratingCount = jsonObj.optInt("rating_count", 0)
+                    val pack = WordPack(id = id, name = name, updated = updated, words = words, questionLang = qLang, answerLang = aLang, author = author, downloadCount = dlCount, tags = tags, verificationStatus = verStatus, avgRating = avgRating, ratingCount = ratingCount)
                     WordStorage.savePack(context, pack)
                     AudioCache.downloadPackAudio(context, words)
                     ImageCache.downloadPackImages(context, words)

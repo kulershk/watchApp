@@ -292,38 +292,32 @@ fun WordAudioControls(
         }
     } else {
         // Mic button - WhatsApp style
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            IconButton(
-                onClick = {
-                    if (hasPermission) {
-                        if (recorder.startRecording()) {
-                            recording = true
-                        } else {
-                            Toast.makeText(context, "Failed to start recording", Toast.LENGTH_SHORT).show()
-                        }
+        OutlinedButton(
+            onClick = {
+                if (hasPermission) {
+                    if (recorder.startRecording()) {
+                        recording = true
                     } else {
-                        permissionLauncher.launch(android.Manifest.permission.RECORD_AUDIO)
+                        Toast.makeText(context, "Failed to start recording", Toast.LENGTH_SHORT).show()
                     }
-                },
-                modifier = Modifier
-                    .size(40.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.primary)
-            ) {
-                Icon(
-                    Icons.Filled.Mic,
-                    contentDescription = "Record",
-                    tint = MaterialTheme.colorScheme.onPrimary,
-                    modifier = Modifier.size(22.dp)
-                )
-            }
+                } else {
+                    permissionLauncher.launch(android.Manifest.permission.RECORD_AUDIO)
+                }
+            },
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(8.dp),
+            contentPadding = PaddingValues(12.dp)
+        ) {
+            Icon(
+                Icons.Filled.Mic,
+                contentDescription = "Record",
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(18.dp)
+            )
+            Spacer(modifier = Modifier.width(8.dp))
             Text(
                 "Tap to record",
-                fontSize = 12.sp,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
+                fontSize = 13.sp
             )
         }
     }

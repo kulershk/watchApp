@@ -55,7 +55,7 @@ fun BrowsePacksScreen(
     var previewPack by remember { mutableStateOf<RemotePack?>(null) }
     var previewWords by remember { mutableStateOf<List<Word>>(emptyList()) }
     var previewLoading by remember { mutableStateOf(false) }
-    var verifiedOnly by remember { mutableStateOf(true) }
+    var verifiedOnly by remember { mutableStateOf(AppSettings.getBrowseVerifiedOnly(context)) }
     var showUnverifiedWarning by remember { mutableStateOf(false) }
 
     fun loadPacks() {
@@ -306,6 +306,7 @@ fun BrowsePacksScreen(
                             showUnverifiedWarning = true
                         } else {
                             verifiedOnly = true
+                            AppSettings.setBrowseVerifiedOnly(context, true)
                             loadPacks()
                         }
                     }
@@ -322,6 +323,7 @@ fun BrowsePacksScreen(
                         TextButton(onClick = {
                             showUnverifiedWarning = false
                             verifiedOnly = false
+                            AppSettings.setBrowseVerifiedOnly(context, false)
                             loadPacks()
                         }) { Text("Show All") }
                     },

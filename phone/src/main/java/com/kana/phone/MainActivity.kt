@@ -20,6 +20,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.Explore
 import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material.icons.filled.MenuBook
@@ -170,26 +171,40 @@ fun AppContent(context: android.content.Context, initialQuiz: QuizItem?) {
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         bottomBar = {
-            NavigationBar(modifier = Modifier.height(56.dp)) {
+            val navBarColor = MaterialTheme.colorScheme.surface
+            val navColors = NavigationBarItemDefaults.colors(
+                selectedIconColor = MaterialTheme.colorScheme.primary,
+                unselectedIconColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
+                indicatorColor = navBarColor
+            )
+            NavigationBar(
+                containerColor = navBarColor,
+                tonalElevation = 0.dp,
+                modifier = Modifier.height(64.dp)
+            ) {
                 NavigationBarItem(
                     selected = selectedTab == Tab.QUIZ,
                     onClick = { selectedTab = Tab.QUIZ; currentScreen = Screen.QUIZ },
-                    icon = { Icon(Icons.Filled.PlayArrow, contentDescription = "Quiz") }
+                    icon = { Icon(Icons.Filled.PlayArrow, contentDescription = "Quiz") },
+                    colors = navColors
                 )
                 NavigationBarItem(
                     selected = selectedTab == Tab.PACKS,
                     onClick = { selectedTab = Tab.PACKS; currentScreen = Screen.PACK_LIST },
-                    icon = { Icon(Icons.Filled.FolderOpen, contentDescription = "My Packs") }
+                    icon = { Icon(Icons.Filled.FolderOpen, contentDescription = "My Packs") },
+                    colors = navColors
                 )
                 NavigationBarItem(
                     selected = selectedTab == Tab.BROWSE,
                     onClick = { selectedTab = Tab.BROWSE; currentScreen = Screen.BROWSE },
-                    icon = { Icon(Icons.Filled.Explore, contentDescription = "Browse") }
+                    icon = { Icon(Icons.Filled.Explore, contentDescription = "Browse") },
+                    colors = navColors
                 )
                 NavigationBarItem(
                     selected = selectedTab == Tab.SETTINGS,
                     onClick = { selectedTab = Tab.SETTINGS; currentScreen = Screen.SETTINGS },
-                    icon = { Icon(Icons.Filled.Settings, contentDescription = "Settings") }
+                    icon = { Icon(Icons.Filled.Settings, contentDescription = "Settings") },
+                    colors = navColors
                 )
             }
         },
@@ -344,7 +359,10 @@ fun QuizScreen(
         ) {
             if (imageFile != null) {
                 val bitmap = remember(imageUrl) {
-                    android.graphics.BitmapFactory.decodeFile(imageFile.absolutePath)
+                    val opts = android.graphics.BitmapFactory.Options().apply {
+                        inPreferredConfig = android.graphics.Bitmap.Config.ARGB_8888
+                    }
+                    android.graphics.BitmapFactory.decodeFile(imageFile.absolutePath, opts)
                 }
                 if (bitmap != null) {
                     androidx.compose.foundation.Image(
@@ -438,7 +456,7 @@ fun QuizScreen(
                         containerColor = MaterialTheme.colorScheme.secondary
                     )
                 ) {
-                    Text("Next")
+                    Icon(Icons.Filled.ArrowForward, contentDescription = "Next")
                 }
             }
         }

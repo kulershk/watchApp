@@ -2,9 +2,11 @@ package com.kana.phone
 
 import android.net.Uri
 import android.widget.Toast
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -14,6 +16,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.ArrowDropUp
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -69,21 +72,28 @@ fun PackEditorScreen(
         }
     }
 
+    var showLeaveConfirm by remember { mutableStateOf(false) }
+
+    BackHandler { showLeaveConfirm = true }
+
+    if (showLeaveConfirm) {
+        AlertDialog(
+            onDismissRequest = { showLeaveConfirm = false },
+            title = { Text("Leave without saving?") },
+            text = { Text("Any unsaved changes will be lost.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    showLeaveConfirm = false
+                    onBack()
+                }) { Text("Leave") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showLeaveConfirm = false }) { Text("Stay") }
+            }
+        )
+    }
+
     Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text(if (editId != null) "Edit Pack" else "Create Pack") },
-                navigationIcon = {
-                    TextButton(onClick = onBack) {
-                        Text("\u2190 Back", color = MaterialTheme.colorScheme.onSurface)
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    titleContentColor = MaterialTheme.colorScheme.primary
-                )
-            )
-        },
         containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
         if (loading) {
@@ -478,13 +488,62 @@ fun PackEditorScreen(
 
             // Word cards
             itemsIndexed(words.toList()) { index, word ->
+                var showDeleteConfirm by remember { mutableStateOf(false) }
+                val dismissState = rememberDismissState(
+                    confirmValueChange = { dismissValue ->
+                        if (dismissValue == DismissValue.DismissedToStart) {
+                            showDeleteConfirm = true
+                            false // Don't actually dismiss, wait for confirmation
+                        } else false
+                    }
+                )
+
+                if (showDeleteConfirm) {
+                    AlertDialog(
+                        onDismissRequest = { showDeleteConfirm = false },
+                        title = { Text("Delete card?") },
+                        text = { Text("Are you sure you want to delete card #${index + 1}?") },
+                        confirmButton = {
+                            TextButton(onClick = {
+                                showDeleteConfirm = false
+                                val updated = words.toMutableList()
+                                updated.removeAt(index)
+                                if (updated.isEmpty()) updated.add(EditWord())
+                                words = updated
+                            }) { Text("Delete") }
+                        },
+                        dismissButton = {
+                            TextButton(onClick = { showDeleteConfirm = false }) { Text("Cancel") }
+                        }
+                    )
+                }
+
+                SwipeToDismiss(
+                    state = dismissState,
+                    directions = setOf(DismissDirection.EndToStart),
+                    background = {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(MaterialTheme.colorScheme.error, RoundedCornerShape(12.dp))
+                                .padding(horizontal = 20.dp),
+                            contentAlignment = Alignment.CenterEnd
+                        ) {
+                            Icon(
+                                Icons.Filled.Delete,
+                                contentDescription = "Delete",
+                                tint = MaterialTheme.colorScheme.onError
+                            )
+                        }
+                    },
+                    dismissContent = {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     colors = CardDefaults.cardColors(
                         containerColor = if (word.enabled)
                             MaterialTheme.colorScheme.surface
                         else
-                            MaterialTheme.colorScheme.surface.copy(alpha = 0.5f)
+                            MaterialTheme.colorScheme.surfaceVariant
                     ),
                     shape = RoundedCornerShape(12.dp)
                 ) {
@@ -604,23 +663,10 @@ fun PackEditorScreen(
                             }
                         )
 
-                        Spacer(modifier = Modifier.height(4.dp))
-
-                        TextButton(
-                            onClick = {
-                                val updated = words.toMutableList()
-                                updated.removeAt(index)
-                                if (updated.isEmpty()) updated.add(EditWord())
-                                words = updated
-                            },
-                            colors = ButtonDefaults.textButtonColors(
-                                contentColor = MaterialTheme.colorScheme.error
-                            )
-                        ) {
-                            Text("Remove")
-                        }
                     }
                 }
+                    }
+                )
             }
 
             // Add word button
@@ -661,8 +707,8 @@ fun PackEditorScreen(
                             if (savedId != null) {
                                 ApiClient.savePack(savedId!!, packName, validWords, context, isPublic, tags, questionLang, answerLang) { success, msg ->
                                     if (success) {
-                                        // Re-download pack locally so quiz uses updated audio
                                         PackUpdater.updatePack(context, savedId!!) { _, _ -> }
+                                        onBack()
                                     }
                                     saving = false
                                     Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
@@ -672,9 +718,9 @@ fun PackEditorScreen(
                                     saving = false
                                     if (success) {
                                         savedId = result
-                                        // Download pack locally so quiz has the audio
                                         PackUpdater.downloadPack(context, result) { _, _ -> }
                                         Toast.makeText(context, "Created!", Toast.LENGTH_SHORT).show()
+                                        onBack()
                                     } else {
                                         Toast.makeText(context, result, Toast.LENGTH_SHORT).show()
                                     }
@@ -739,10 +785,12 @@ fun WordImageControls(
         if (uri == null) return@rememberLauncherForActivityResult
         uploading = true
         try {
-            val tempFile = File(context.cacheDir, "upload_img_$index.jpg")
             // Decode and resize if needed (max 800px)
             val inputStream = context.contentResolver.openInputStream(uri)
-            val originalBitmap = android.graphics.BitmapFactory.decodeStream(inputStream)
+            val decodeOpts = android.graphics.BitmapFactory.Options().apply {
+                inPreferredConfig = android.graphics.Bitmap.Config.ARGB_8888
+            }
+            val originalBitmap = android.graphics.BitmapFactory.decodeStream(inputStream, null, decodeOpts)
             inputStream?.close()
             if (originalBitmap == null) {
                 uploading = false
@@ -756,8 +804,15 @@ fun WordImageControls(
                 val h = (originalBitmap.height * scale).toInt()
                 android.graphics.Bitmap.createScaledBitmap(originalBitmap, w, h, true)
             } else originalBitmap
+            val hasAlpha = bmp.hasAlpha()
+            val ext = if (hasAlpha) "png" else "jpg"
+            val tempFile = File(context.cacheDir, "upload_img_$index.$ext")
             tempFile.outputStream().use { out ->
-                bmp.compress(android.graphics.Bitmap.CompressFormat.JPEG, 85, out)
+                if (hasAlpha) {
+                    bmp.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, out)
+                } else {
+                    bmp.compress(android.graphics.Bitmap.CompressFormat.JPEG, 85, out)
+                }
             }
             if (bmp !== originalBitmap) bmp.recycle()
             originalBitmap.recycle()

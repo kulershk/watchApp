@@ -95,6 +95,16 @@ object AppSettings {
         prefs.edit().putString(KEY_DISPLAY_NAME, name).apply()
     }
 
+    fun getBrowseVerifiedOnly(context: Context): Boolean {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        return prefs.getBoolean("browse_verified_only", true)
+    }
+
+    fun setBrowseVerifiedOnly(context: Context, value: Boolean) {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        prefs.edit().putBoolean("browse_verified_only", value).apply()
+    }
+
     fun isLoggedIn(context: Context): Boolean = getAuthToken(context) != null
 
     fun logout(context: Context) {

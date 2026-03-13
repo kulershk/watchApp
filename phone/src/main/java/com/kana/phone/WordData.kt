@@ -20,7 +20,11 @@ data class WordPack(
     val questionLang: String = "",
     val answerLang: String = "",
     val author: String = "",
-    val downloadCount: Int = 0
+    val downloadCount: Int = 0,
+    val tags: String = "",
+    val verificationStatus: String = "none",
+    val avgRating: Float = 0f,
+    val ratingCount: Int = 0
 )
 
 object WordStorage {
@@ -75,7 +79,11 @@ object WordStorage {
                     questionLang = packObj.optString("question_lang", ""),
                     answerLang = packObj.optString("answer_lang", ""),
                     author = packObj.optString("author", ""),
-                    downloadCount = packObj.optInt("download_count", 0)
+                    downloadCount = packObj.optInt("download_count", 0),
+                    tags = packObj.optString("tags", ""),
+                    verificationStatus = packObj.optString("verification_status", "none"),
+                    avgRating = packObj.optDouble("avg_rating", 0.0).toFloat(),
+                    ratingCount = packObj.optInt("rating_count", 0)
                 )
             )
         }
@@ -130,6 +138,10 @@ object WordStorage {
             packObj.put("answer_lang", p.answerLang)
             packObj.put("author", p.author)
             packObj.put("download_count", p.downloadCount)
+            packObj.put("tags", p.tags)
+            packObj.put("verification_status", p.verificationStatus)
+            packObj.put("avg_rating", p.avgRating.toDouble())
+            packObj.put("rating_count", p.ratingCount)
             jsonArray.put(packObj)
         }
 

@@ -2,11 +2,16 @@ package com.kana.phone
 
 import android.content.Intent
 import android.widget.Toast
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.StarBorder
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Help
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Share
@@ -19,7 +24,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun PackListScreen(
     onBack: () -> Unit,
@@ -202,6 +207,55 @@ fun PackListScreen(
                                 )
                             }
 
+                            // Tags
+                            if (pack.tags.isNotBlank()) {
+                                Spacer(modifier = Modifier.height(8.dp))
+                                FlowRow(
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                                ) {
+                                    pack.tags.split(",").map { it.trim() }.filter { it.isNotBlank() }.forEach { tag ->
+                                        SuggestionChip(
+                                            onClick = {},
+                                            label = { Text(tag, fontSize = 12.sp) }
+                                        )
+                                    }
+                                }
+                            }
+
+                            // Rating
+                            if (pack.isPublic && pack.ratingCount > 0) {
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(1.dp)
+                                ) {
+                                    Text(
+                                        "%.1f".format(pack.avgRating),
+                                        fontSize = 12.sp,
+                                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                                        modifier = Modifier.padding(end = 4.dp)
+                                    )
+                                    (1..5).forEach { star ->
+                                        val filled = star <= pack.avgRating + 0.5f
+                                        Text(
+                                            if (filled) "\u2605" else "\u2606",
+                                            fontSize = 16.sp,
+                                            color = if (filled)
+                                                MaterialTheme.colorScheme.primary
+                                            else
+                                                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
+                                        )
+                                    }
+                                    Text(
+                                        "(${pack.ratingCount})",
+                                        fontSize = 12.sp,
+                                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                                        modifier = Modifier.padding(start = 4.dp)
+                                    )
+                                }
+                            }
+
                             Spacer(modifier = Modifier.height(8.dp))
 
                             Row(
@@ -303,6 +357,54 @@ fun PackListScreen(
                     }
 
                     items(downloadedOnly, key = { "local_${it.id}" }) { pack ->
+                        var showDeleteConfirm by remember { mutableStateOf(false) }
+                        val dismissState = rememberDismissState(
+                            confirmValueChange = { dismissValue ->
+                                if (dismissValue == DismissValue.DismissedToStart) {
+                                    showDeleteConfirm = true
+                                    false
+                                } else false
+                            }
+                        )
+
+                        if (showDeleteConfirm) {
+                            AlertDialog(
+                                onDismissRequest = { showDeleteConfirm = false },
+                                title = { Text("Remove pack?") },
+                                text = { Text("Remove \"${pack.name.ifBlank { "Unnamed" }}\" from your device?") },
+                                confirmButton = {
+                                    TextButton(onClick = {
+                                        showDeleteConfirm = false
+                                        WordStorage.deletePack(context, pack.id)
+                                        localPacks = WordStorage.loadAllPacks(context)
+                                        localIds = localPacks.map { it.id }.toSet()
+                                    }) { Text("Remove") }
+                                },
+                                dismissButton = {
+                                    TextButton(onClick = { showDeleteConfirm = false }) { Text("Cancel") }
+                                }
+                            )
+                        }
+
+                        SwipeToDismiss(
+                            state = dismissState,
+                            directions = setOf(DismissDirection.EndToStart),
+                            background = {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .background(MaterialTheme.colorScheme.error, RoundedCornerShape(12.dp))
+                                        .padding(horizontal = 20.dp),
+                                    contentAlignment = Alignment.CenterEnd
+                                ) {
+                                    Icon(
+                                        Icons.Filled.Delete,
+                                        contentDescription = "Delete",
+                                        tint = MaterialTheme.colorScheme.onError
+                                    )
+                                }
+                            },
+                            dismissContent = {
                         Card(
                             onClick = {
                                 previewPack = RemotePack(
@@ -329,11 +431,19 @@ fun PackListScreen(
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     Column(modifier = Modifier.weight(1f)) {
-                                        Text(
-                                            pack.name.ifBlank { "Unnamed" },
-                                            fontSize = 16.sp,
-                                            fontWeight = FontWeight.Bold
-                                        )
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                        ) {
+                                            Text(
+                                                pack.name.ifBlank { "Unnamed" },
+                                                fontSize = 16.sp,
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                            if (pack.verificationStatus != "none") {
+                                                VerificationBadge(pack.verificationStatus)
+                                            }
+                                        }
                                         Text(
                                             "${pack.words.size} words" + if (pack.downloadCount > 0) " \u2022 ${pack.downloadCount} downloads" else "",
                                             fontSize = 13.sp,
@@ -365,28 +475,58 @@ fun PackListScreen(
                                     )
                                 }
 
-                                Spacer(modifier = Modifier.height(8.dp))
+                                // Tags
+                                if (pack.tags.isNotBlank()) {
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    FlowRow(
+                                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                                    ) {
+                                        pack.tags.split(",").map { it.trim() }.filter { it.isNotBlank() }.forEach { tag ->
+                                            SuggestionChip(
+                                                onClick = {},
+                                                label = { Text(tag, fontSize = 12.sp) }
+                                            )
+                                        }
+                                    }
+                                }
 
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Button(
-                                        onClick = {
-                                            WordStorage.deletePack(context, pack.id)
-                                            localPacks = WordStorage.loadAllPacks(context)
-                                            localIds = localPacks.map { it.id }.toSet()
-                                        },
-                                        colors = ButtonDefaults.buttonColors(
-                                            containerColor = MaterialTheme.colorScheme.error
-                                        ),
-                                        shape = RoundedCornerShape(8.dp)
-                                    ) { Text("Remove") }
-
+                                // Rating
+                                if (pack.ratingCount > 0) {
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(1.dp)
+                                    ) {
+                                        Text(
+                                            "%.1f".format(pack.avgRating),
+                                            fontSize = 12.sp,
+                                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                                            modifier = Modifier.padding(end = 4.dp)
+                                        )
+                                        (1..5).forEach { star ->
+                                            val filled = star <= pack.avgRating + 0.5f
+                                            Text(
+                                                if (filled) "\u2605" else "\u2606",
+                                                fontSize = 16.sp,
+                                                color = if (filled)
+                                                    MaterialTheme.colorScheme.primary
+                                                else
+                                                    MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
+                                            )
+                                        }
+                                        Text(
+                                            "(${pack.ratingCount})",
+                                            fontSize = 12.sp,
+                                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                                            modifier = Modifier.padding(start = 4.dp)
+                                        )
+                                    }
                                 }
                             }
                         }
+                            }
+                        )
                     }
                 }
             }
