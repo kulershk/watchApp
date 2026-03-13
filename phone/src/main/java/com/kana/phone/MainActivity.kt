@@ -179,8 +179,7 @@ fun AppContent(context: android.content.Context, initialQuiz: QuizItem?) {
             )
             NavigationBar(
                 containerColor = navBarColor,
-                tonalElevation = 0.dp,
-                modifier = Modifier.height(64.dp)
+                tonalElevation = 0.dp
             ) {
                 NavigationBarItem(
                     selected = selectedTab == Tab.QUIZ,
