@@ -108,6 +108,25 @@ fun AppContent(context: android.content.Context, initialQuiz: QuizItem?) {
     var syncMessage by remember { mutableStateOf<String?>(null) }
     var updateAvailable by remember { mutableStateOf<String?>(null) }
     val snackbarHostState = remember { SnackbarHostState() }
+    var lastVersionCheck by remember { mutableStateOf(0L) }
+
+    fun checkVersionUpdate() {
+        val now = System.currentTimeMillis()
+        if (now - lastVersionCheck < 5 * 60 * 1000) return // 5 min cooldown
+        lastVersionCheck = now
+        val currentVersion = try {
+            context.packageManager.getPackageInfo(context.packageName, 0).versionName
+        } catch (_: Exception) { null }
+        if (currentVersion != null) {
+            ApiClient.checkVersion(context) { latestPhone, _ ->
+                if (latestPhone != null && latestPhone != currentVersion) {
+                    updateAvailable = latestPhone
+                } else {
+                    updateAvailable = null
+                }
+            }
+        }
+    }
 
     LaunchedEffect(Unit) {
         PackUpdater.checkForUpdates(context) { syncedNames ->
@@ -116,16 +135,11 @@ fun AppContent(context: android.content.Context, initialQuiz: QuizItem?) {
         if (AppSettings.isLoggedIn(context)) {
             ApiClient.pushWatchSyncPacks(context, AppSettings.getEnabledPacks(context))
         }
-        val currentVersion = try {
-            context.packageManager.getPackageInfo(context.packageName, 0).versionName
-        } catch (_: Exception) { null }
-        if (currentVersion != null) {
-            ApiClient.checkVersion(context) { latestPhone, _ ->
-                if (latestPhone != null && latestPhone != currentVersion) {
-                    updateAvailable = latestPhone
-                }
-            }
-        }
+        checkVersionUpdate()
+    }
+
+    LaunchedEffect(selectedTab) {
+        checkVersionUpdate()
     }
 
     LaunchedEffect(syncMessage) {
