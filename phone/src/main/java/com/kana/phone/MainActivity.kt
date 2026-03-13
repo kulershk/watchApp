@@ -140,6 +140,9 @@ fun AppContent(context: android.content.Context, initialQuiz: QuizItem?) {
 
     LaunchedEffect(selectedTab) {
         checkVersionUpdate()
+        if (selectedTab == Tab.QUIZ && quizItem == null) {
+            quizItem = getRandomQuizItem(context)
+        }
     }
 
     LaunchedEffect(syncMessage) {
@@ -197,7 +200,11 @@ fun AppContent(context: android.content.Context, initialQuiz: QuizItem?) {
             ) {
                 NavigationBarItem(
                     selected = selectedTab == Tab.QUIZ,
-                    onClick = { selectedTab = Tab.QUIZ; currentScreen = Screen.QUIZ },
+                    onClick = {
+                        selectedTab = Tab.QUIZ
+                        currentScreen = Screen.QUIZ
+                        if (quizItem == null) quizItem = getRandomQuizItem(context)
+                    },
                     icon = { Icon(Icons.Filled.PlayArrow, contentDescription = "Quiz") },
                     colors = navColors
                 )
